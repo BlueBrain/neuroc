@@ -2,50 +2,32 @@
 from __future__ import print_function
 
 import operator
+from operator import lt, gt
 import os
 import xml.etree.ElementTree
 
 import numpy as np
+from tqdm import tqdm
 from morphio import PointLevel, SectionType, set_maximum_warnings, upstream
 from morphio.mut import Morphology
-from tqdm import tqdm
 
 from neuroc.utils.xml import read_placement_rules, update_rule
 
-
-class NoSectionToCut(Exception):
-    '''Custom exception'''
+X, Y, Z = 0, 1, 2
 
 
-class NoAxon(Exception):
-    '''Custom exception'''
-
-    def __str__(self):
-        return 'Neuron has no axon'
+class ShrinkError(Exception):
+    '''Error related to the axon shrinker'''
 
 
-class TooManyAxons(Exception):
-    '''Custom exception'''
-
-    def __str__(self):
-        return 'Neuron has more than one axon'
-
-
-class NoAxonAnnotation(Exception):
-    '''Custom exception'''
-
-    def __str__(self):
-        return 'No axon annotation'
-
-
-def section_path_lengths(neuron, neurite):
+def section_path_lengths(neurite):
     '''Return a dict {section: pathlength from the soma}'''
     dist = {s.id: np.linalg.norm(np.diff(s.points, axis=0), axis=1).sum()
-            for s in neuron.iter(neurite)}
+            for s in neurite.iter()}
 
     return {section.id: sum(dist[upstream.id]
-                            for upstream in neuron.iter(section, upstream))
-            for section in neuron.iter(neurite)}
+                            for upstream in section.iter(upstream))
+            for section in neurite.iter()}
 
 
 def cut_and_graft_coordinate(rules):
@@ -56,6 +38,28 @@ def cut_and_graft_coordinate(rules):
     return upward, y_start_cut, y_start_graft
 
 
+def get_axon(neuron):
+    '''Check the neuron has exactly one axon and returns it'''
+    axons = [section for section in neuron.root_sections if section.type == SectionType.axon]
+
+    if not axons:
+        raise ShrinkError('No axon')
+    if len(axons) > 1:
+        raise ShrinkError('Too many axons')
+
+    return axons[0]
+
+
+def get_main_branch_sections(neuron, root):
+    '''Returns sections belonging to the longest path ordered from the root to the tip'''
+    path_lengths = section_path_lengths(root)
+    # index of the section with the longest path length
+    idx_root_end = max(path_lengths.items(), key=operator.itemgetter(1))[0]
+    root_end = neuron.section(idx_root_end)
+    main_branch_sections = list(reversed(list(root_end.iter(upstream))))
+    return main_branch_sections
+
+
 def get_start_cut_start_graft_sections(original, upward, y_start_cut, y_start_graft):
     '''Find section to cut and graft
 
@@ -64,35 +68,30 @@ def get_start_cut_start_graft_sections(original, upward, y_start_cut, y_start_gr
     is the first section along the path to this section (starting at soma)
        whose coordinate is above y_start_cut (resp. y_start_graft)
     '''
-    axons = [section for section in original.root_sections if section.type == SectionType.axon]
-
-    if not axons:
-        raise NoAxon
-    if len(axons) > 1:
-        raise TooManyAxons
-
-    axon = axons[0]
-    path_lengths = section_path_lengths(original, axon)
-    idx_axon_end = max(path_lengths.items(), key=operator.itemgetter(1))[0]
-    axon_end = original.section(idx_axon_end)
-
-    main_branch_sections = reversed(list(original.iter(axon_end, upstream)))
+    axon = get_axon(original)
+    main_branch_sections = get_main_branch_sections(original, axon)
     sections = {'start_cut': None, 'start_graft': None}
     for section in main_branch_sections:
-        if not sections['start_cut'] and (upward == (section.points[-1, 1] > y_start_cut)):
-            sections['start_cut'] = section
-            continue
+        if not sections['start_cut']:
+            if upward and (np.max(section.points[:, Y]) > y_start_cut):
+                sections['start_cut'] = section
+            if not upward and (np.min(section.points[:, Y]) < y_start_cut):
+                sections['start_cut'] = section
 
-        if (sections['start_cut'] and not sections['start_graft'] and
-                (upward == (section.points[-1, 1] > y_start_graft))):
-            sections['start_graft'] = section
-            break
+        if sections['start_cut'] and not sections['start_graft']:
+            if upward and (np.max(section.points[:, Y]) > y_start_graft):
+                sections['start_graft'] = section
+                break
+
+            if not upward and (np.min(section.points[:, Y]) < y_start_graft):
+                sections['start_graft'] = section
+                break
 
     if not sections['start_cut']:
-        raise NoSectionToCut('No section to cut from')
+        raise ShrinkError('No section to cut from')
 
     if not sections['start_graft']:
-        raise NoSectionToCut('No section to graft from')
+        raise ShrinkError('No section to graft from')
 
     return sections['start_cut'], sections['start_graft']
 
@@ -100,10 +99,9 @@ def get_start_cut_start_graft_sections(original, upward, y_start_cut, y_start_gr
 def _y_interpolate(section, index1, index2, y):
     '''Return the point and diameter interpolated between points at
     'index1' and 'index2' and which is located at the given 'y' coordinate'''
-    Y_INDEX = 1
     p1, p2 = section.points[[index1, index2], :]
     d1, d2 = section.diameters[[index1, index2]]
-    frac = (y - p1[Y_INDEX]) / (p2[Y_INDEX] - p1[Y_INDEX])
+    frac = (y - p1[Y]) / (p2[Y] - p1[Y])
     return (p1 + frac * (p2 - p1),
             d1 + frac * (d2 - d1))
 
@@ -116,7 +114,7 @@ def cut_section_at_plane_coord(section, y_plane, upward, cut_before):
         upward (bool): whether the section is oriented upward or downward
         cut_before (bool): whether to remove the points before or after the
             y_plane (according to upward/downward directionality)'''
-    cut_condition = (section.points[:, 1] > y_plane) == upward
+    cut_condition = (section.points[:, Y] > y_plane) == upward
     cut_index = np.where(cut_condition)[0][0]
 
     if cut_index > 0:
@@ -140,7 +138,7 @@ def cut_branch(neuron, upward, start_cut, y_start_cut):
 
     start_cut = neuron.section(start_cut.id)
     cut_section_at_plane_coord(start_cut, y_start_cut, upward, cut_before=False)
-    for child in neuron.children(start_cut):
+    for child in start_cut.children:
         neuron.delete_section(child, recursive=True)
 
 
@@ -155,19 +153,18 @@ def add_vertical_segment(mut, start_cut, height):
     vertical_segment = [start_cut.points[-1].tolist(),
                         (start_cut.points[-1] + [0, height, 0]).tolist()]
 
-    return mut.append_section(start_cut,
-                              PointLevel(vertical_segment,
-                                         [start_cut.diameters[-1],
-                                          start_cut.diameters[-1]]))
+    return start_cut.append_section(PointLevel(vertical_segment,
+                                               [start_cut.diameters[-1],
+                                                start_cut.diameters[-1]]))
 
 
-def translate(morphology, root, translation):
+def translate(root, translation):
     '''Recursively translate a section and all its descendents'''
-    for section in morphology.iter(root):
+    for section in root.iter():
         section.points += translation
 
 
-def graft_branch(new, original, upward, root, to_be_grafted, y_start_graft):
+def graft_branch(upward, root, to_be_grafted, y_start_graft):
     '''Append section 'to_be_grafted' at the end of section 'root'
     Returns the distance along y by which section 'to_be_grafted' has been moved in the process
     '''
@@ -175,13 +172,38 @@ def graft_branch(new, original, upward, root, to_be_grafted, y_start_graft):
     cut_section_at_plane_coord(to_be_grafted, y_start_graft, upward, cut_before=True)
 
     translation = root.points[-1] - to_be_grafted.points[0]
-    translate(original, to_be_grafted, translation)
+    translate(to_be_grafted, translation)
 
-    new.append_section(root,
-                       to_be_grafted,
-                       original)
+    root.append_section(to_be_grafted, recursive=True)
 
     return translation[1]
+
+
+def cut_axon_end(neuron, y_cut):
+    '''Cut axon end
+
+    Remove points above y_cut if y_cut is above first axon point else below y_cut
+
+    Args:
+        neuron (str|morphio.mut.Morphology|morphio.Morphology):
+            a morphio neuron or a neuron filename
+        y_cut (float): the Y coordinate at which to cut the axon
+    '''
+
+    neuron = Morphology(neuron)
+    axon = get_axon(neuron)
+    upward = axon.points[0, Y] < y_cut
+    main_branch_sections = get_main_branch_sections(neuron, axon)
+
+    for section in main_branch_sections:
+        op = gt if upward else lt
+        idx = np.where(op(section.points, y_cut))[0]
+        if idx.size:
+            cut_section_at_plane_coord(section, y_cut, upward, False)
+            for child in section.children:
+                neuron.delete_section(child, recursive=True)
+            break
+    return neuron
 
 
 def cut_and_graft(orig_filename, upward, y_start_cut, y_start_graft, height):
@@ -200,8 +222,7 @@ def cut_and_graft(orig_filename, upward, y_start_cut, y_start_graft, height):
 
     cut_branch(new_neuron, upward, start_cut, y_start_cut)
     extra_section = add_vertical_segment(new_neuron, start_cut, height)
-    y_min_diff = graft_branch(new_neuron, original, upward,
-                              extra_section, start_graft, y_start_graft)
+    y_min_diff = graft_branch(upward, extra_section, start_graft, y_start_graft)
 
     return new_neuron, y_min_diff
 
@@ -226,7 +247,7 @@ def shrink_all_heights(orig_filename, annotation_filename,
     xml_tree = xml.etree.ElementTree.parse(annotation_filename)
     rules = read_placement_rules(xml_tree)
     if 'axon' not in rules:
-        raise NoAxonAnnotation
+        raise ShrinkError('No axon annotation')
 
     upward, y_start_cut, y_start_graft = cut_and_graft_coordinate(rules)
 
@@ -259,6 +280,7 @@ def write_neuron_and_rule(new_neuron, filename, xml_tree, rules, y_diff):
                  'y_max': str(rules['axon']['y_max'] + y_diff)})
 
     new_neuron.write(filename + '.h5')
+    new_neuron.write(filename + '.asc')
     xml_tree.write(filename + '.xml')
 
 
@@ -275,7 +297,7 @@ def run(file_dir, annotation_dir, output_dir, n_steps, heights):
                                output_dir,
                                heights,
                                n_steps)
-        except (NoSectionToCut, NoAxon, NoAxonAnnotation) as e:
+        except ShrinkError as e:
             errors.append((f, str(e)))
 
     print('Done')

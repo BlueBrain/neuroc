@@ -5,6 +5,9 @@ from morphio.mut import Morphology
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_equal)
 
+from nose.tools import assert_dict_equal
+
+
 from neuroc.axon_shrinker.shrink import *
 
 _path = os.path.dirname(os.path.abspath(__file__))
@@ -21,10 +24,12 @@ def _get_axon(neuron):
 def test_section_path_length():
     neuron = _neuron()
 
-    assert_array_equal(section_path_lengths(neuron, neuron.root_sections[0]).values(),
-                       [5, 10, 11])
-    assert_array_almost_equal(section_path_lengths(neuron, neuron.root_sections[1]).values(),
-                              [4.123106, 10.123106, 9.123106])
+    assert_dict_equal(section_path_lengths(neuron.root_sections[0]),
+                       {0: 5.0, 1: 10.0, 2: 11.0})
+
+
+    assert_dict_equal(section_path_lengths(neuron.root_sections[1]),
+                      {3: 4.123105525970459, 4: 10.123105525970459, 5: 9.123105525970459})
 
 
 def test_cut_and_graft_coordinate():
@@ -54,11 +59,11 @@ def test_cut_branch():
 def test_add_vertical_segment():
     neuron = _neuron()
 
-    end_axon = neuron.children(_get_axon(neuron))[1]
+    end_axon = _get_axon(neuron).children[1]
     add_vertical_segment(neuron, end_axon, 11.5)
-    assert_equal(len(neuron.children(end_axon)), 1)
+    assert_equal(len(end_axon.children), 1)
 
-    assert_array_equal(neuron.children(end_axon)[0].points,
+    assert_array_equal(end_axon.children[0].points,
                        [end_axon.points[-1],
                         end_axon.points[-1] + [0, 11.5, 0]])
 
@@ -67,17 +72,17 @@ def test_graft_branch():
     neuron = _neuron()
     dendrite = next(sec for sec in neuron.root_sections if sec.type != morphio.axon)
 
-    end_axon = neuron.children(_get_axon(neuron))[1]
+    end_axon = _get_axon(neuron).children[1]
 
-    y_diff = graft_branch(neuron, neuron, True, end_axon, dendrite, -4)
+    y_diff = graft_branch(True, end_axon, dendrite, -4)
 
     assert_equal(y_diff, -4)
-    assert_equal(len(neuron.children(end_axon)), 1)
-    grafted_dendrite = neuron.children(end_axon)[0]
+    assert_equal(len(end_axon.children), 1)
+    grafted_dendrite = end_axon.children[0]
     assert_array_equal(grafted_dendrite.points,
                        [[-5, -4, 0], [-5, 1, 0]])
 
-    assert_equal(len(neuron.children(grafted_dendrite)), 2)
+    assert_equal(len(grafted_dendrite.children), 2)
 
 
 def test_cut_and_graft():
@@ -93,20 +98,20 @@ def test_cut_and_graft():
     assert_array_equal(root.points,
                        [[0, 0, 0], [0, 1, 0], [0, 1.5, 0]])
 
-    assert_equal(len(new_neuron.children(root)), 1)
-    vertical = new_neuron.children(root)[0]
+    assert_equal(len(root.children), 1)
+    vertical = root.children[0]
     assert_equal(vertical.points,
                  [[0, 1.5, 0], [0, 104.5, 0]])
 
-    assert_array_equal(len(new_neuron.children(vertical)), 1)
-    graft_root = new_neuron.children(vertical)[0]
+    assert_array_equal(len(vertical.children), 1)
+    graft_root = vertical.children[0]
     assert_array_equal(graft_root.points,
                        np.array([[0, 104.5, 0],
                                  [0, 104.9, 0],
                                  [0, 105.4, 0]], dtype=np.float32))
 
-    assert_equal(len(new_neuron.children(graft_root)), 2)
-    children = new_neuron.children(graft_root)
+    assert_equal(len(graft_root.children), 2)
+    children = graft_root.children
     assert_array_equal(children[0].points,
                        np.array([[0, 105.4, 0], [0, 105.9, 1]],
                                 dtype=np.float32))
@@ -128,23 +133,43 @@ def test_cut_and_graft_downward():
     assert_array_equal(root.points,
                        [[0, 0, 0], [0, -1, 0], [0, -1.5, 0]])
 
-    assert_equal(len(new_neuron.children(root)), 1)
-    vertical = new_neuron.children(root)[0]
+    assert_equal(len(root.children), 1)
+    vertical = root.children[0]
     assert_equal(vertical.points,
                  [[0, -1.5, 0], [0, -104.5, 0]])
 
-    assert_array_equal(len(new_neuron.children(vertical)), 1)
-    graft_root = new_neuron.children(vertical)[0]
+    assert_array_equal(len(vertical.children), 1)
+    graft_root = vertical.children[0]
     assert_array_equal(graft_root.points,
                        np.array([[0, -104.5, 0],
                                  [0, -104.9, 0],
                                  [0, -105.4, 0]], dtype=np.float32))
 
-    assert_equal(len(new_neuron.children(graft_root)), 2)
-    children = new_neuron.children(graft_root)
+    assert_equal(len(graft_root.children), 2)
+    children = graft_root.children
     assert_array_equal(children[0].points,
                        np.array([[0, -105.4, 0], [0, -105.9, 1]],
                                 dtype=np.float32))
     assert_array_equal(children[1].points,
                        np.array([[0, -105.4, 0], [0, -106.9, 2]],
                                 dtype=np.float32))
+
+def test_cut_axon_end():
+    neuron = cut_axon_end(os.path.join(_path, 'axon.asc'), -9)
+    axon = neuron.root_sections[0]
+    assert_array_equal(axon.points,
+                       np.array([[ 0.,  0.,  1.],
+                                 [ 0., -4.,  0.]], dtype=np.float32))
+
+    assert_array_equal(axon.children[0].points,
+                       np.array([[ 0., -4.,  0.],
+                                 [6, -6, 0]], dtype=np.float32))
+
+    assert_array_equal(axon.children[1].points,
+                       np.array([[ 0., -4.,  0.],
+                                 [-5, -6, 0],
+                                 [-5, -8, 0],
+                                 [-5, -9, 0]], dtype=np.float32))
+
+def test_cut_axon_end_backward():
+    neuron = cut_axon_end(os.path.join(_path, 'axon-to-cut-end.h5'), 500)

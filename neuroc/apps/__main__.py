@@ -1,17 +1,29 @@
+'''CLI endpoint'''
 import click
 
 from neuroc.axon_shrinker.shrink import run
+from neuroc.axon_shrinker.viewer import app, set_output_folder, set_input_folder
 
 
 @click.group()
 def cli():
-    pass
+    '''The CLI object'''
+
+
+@cli.command(short_help='Shrink an axon using a web app')
+@click.argument('output_folder', type=click.Path(exists=True, file_okay=False, writable=True))
+@click.argument('input_folder', type=click.Path(exists=True, file_okay=False))
+def axon_shrinker_viewer(input_folder, output_folder):
+    '''Open the webapp to shrink an axon manually'''
+    set_input_folder(input_folder)
+    set_output_folder(output_folder)
+    app.run_server(debug=True)
 
 
 @cli.command(short_help='Clone morphologies and splice their axon')
-@click.argument('files_folder')
-@click.argument('annotations_folder')
-@click.argument('output_folder')
+@click.argument('files_folder', type=click.Path(exists=True, file_okay=False))
+@click.argument('annotations_folder', type=click.Path(exists=True, file_okay=False))
+@click.argument('output_folder', type=click.Path(exists=True, file_okay=False, writable=True))
 @click.option('--nsamples', default=10)
 @click.option('--heights', default=None, multiple=True, type=int)
 def axon_shrinker(files_folder, annotations_folder, output_folder, nsamples, heights):
