@@ -35,7 +35,7 @@ app.layout = html.Div(children=[
             {'label': 'Shrink', 'value': 'shrink'},
             {'label': 'Cut-end', 'value': 'cut-end'},
         ],
-        values=['shrink', 'cut-end'],
+        value=['shrink', 'cut-end'],
         id='options',
     ),
 
@@ -171,7 +171,7 @@ def display(x, y, filename, plane):
 
 @app.callback(
     Output('explanation', 'children'),
-    [Input('options', 'values')]
+    [Input('options', 'value')]
 )
 def explain(options):
     '''Explain what to do depending on the configuration of the 'cut-end' and 'shrink' checkboxes'''
@@ -197,7 +197,7 @@ def explain(options):
     [State('click-data-x', 'children'),
      State('click-data-y', 'children'),
      State('neuron', 'value'),
-     State('options', 'values')]
+     State('options', 'value')]
 )
 def apply(n_clicks, _, y, filename, options):
     '''Produces the shrinked neuron'''

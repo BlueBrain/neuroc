@@ -1,11 +1,17 @@
 # NeuroC
 
 A collections of programs morphology cloning
-  The following packages can be found
-    - axon shrinker:
+The following packages can be found
+- axon shrinker:
 
-      For each morphology of the FILES_FOLDER, remove the axon splice described by the corresponding annotation (ie. located between the end of the dendritic annotation and the start of the axonal annotation) and replace it by an intermediate vertical segment. For each input morphology,
+For each morphology of the FILES_FOLDER, remove the axon splice described by the corresponding annotation (ie. located between the end of the dendritic annotation and the start of the axonal annotation) and replace it by an intermediate vertical segment. For each input morphology,
     NSAMPLES output morphologies are generated, each with a different length of the replaced segment. Lengths spans from 0 to the length of initially spliced segment
+
+- jitter:
+Create clones of a given morphology with some jitter to make them all different. There are two kinds of jitter: rotation and scaling.
+Rotational jitter rotates each section around its parent axis or around the PCA ([Principal Component Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)) of all descendant points.
+
+
 
 
 # Installation

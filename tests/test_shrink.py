@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 
 import morphio
@@ -10,11 +11,13 @@ from nose.tools import assert_dict_equal
 
 from neuroc.axon_shrinker.shrink import *
 
-_path = os.path.dirname(os.path.abspath(__file__))
+DATA_PATH = Path(Path(__file__).parent, 'data')
 
+def path(file):
+    return str(Path(DATA_PATH, file))
 
 def _neuron():
-    return Morphology(os.path.join(_path, 'simple.asc'))
+    return Morphology(path('simple.asc'))
 
 
 def _get_axon(neuron):
@@ -87,7 +90,7 @@ def test_graft_branch():
 
 def test_cut_and_graft():
     neuron = _neuron()
-    new_neuron, y_diff = cut_and_graft(os.path.join(_path, 'neuron.asc'),
+    new_neuron, y_diff = cut_and_graft(path('neuron.asc'),
                                        upward=True,
                                        y_start_cut=1.5,
                                        y_start_graft=4.6,
@@ -122,7 +125,7 @@ def test_cut_and_graft():
 
 def test_cut_and_graft_downward():
     neuron = _neuron()
-    new_neuron, y_diff = cut_and_graft(os.path.join(_path, 'neuron_downward.asc'),
+    new_neuron, y_diff = cut_and_graft(path('neuron_downward.asc'),
                                        upward=False,
                                        y_start_cut=-1.5,
                                        y_start_graft=-4.6,
@@ -155,7 +158,7 @@ def test_cut_and_graft_downward():
                                 dtype=np.float32))
 
 def test_cut_axon_end():
-    neuron = cut_axon_end(os.path.join(_path, 'axon.asc'), -9)
+    neuron = cut_axon_end(path('axon.asc'), -9)
     axon = neuron.root_sections[0]
     assert_array_equal(axon.points,
                        np.array([[ 0.,  0.,  1.],
@@ -172,4 +175,4 @@ def test_cut_axon_end():
                                  [-5, -9, 0]], dtype=np.float32))
 
 def test_cut_axon_end_backward():
-    neuron = cut_axon_end(os.path.join(_path, 'axon-to-cut-end.h5'), 500)
+    cut_axon_end(path('axon-to-cut-end.h5'), 500)
