@@ -11,7 +11,7 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
 from nose.tools import ok_
 
 from neuroc.jitter import (rotational_jitter, RotationParameters, ScaleParameters,
-                           scaling_jitter, create_clones, _principal_direction, _segment_vectors)
+                           scale_morphology, create_clones, _principal_direction, _segment_vectors)
 
 DATA_PATH = Path(Path(__file__).parent, 'data')
 
@@ -48,21 +48,29 @@ def test_rotational_jitter():
 
 def test_no_scaling():
     neuron = Morphology(SIMPLE_PATH)
-    scaling_jitter(neuron, ScaleParameters(mean=0, std=0), ScaleParameters(mean=0, std=0))
+    scale_morphology(neuron, ScaleParameters(), ScaleParameters())
     ok_(not diff(SIMPLE_PATH, neuron))
 
 def test_section_scaling():
     # Scale by 100%
     neuron = Morphology(SIMPLE_PATH)
-    scaling_jitter(neuron, ScaleParameters(mean=0, std=0), ScaleParameters(mean=1, std=0))
+    scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=2))
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0, 10, 0]])
     assert_array_almost_equal(neuron.section(1).points,
                               [[0, 10, 0], [-10, 10, 0]])
 
+    # Scaling only on X axis
+    neuron = Morphology(SIMPLE_PATH)
+    scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=2, axis=0))
+    assert_array_almost_equal(neuron.section(0).points,
+                              [[0, 0, 0], [0, 5, 0]])
+    assert_array_almost_equal(neuron.section(1).points,
+                              [[0, 5, 0], [-10, 5., 0]])
+
     # Attempt at scaling by -200% but minimum scaling factor is 1% of original length
     neuron = Morphology(SIMPLE_PATH)
-    scaling_jitter(neuron, ScaleParameters(mean=0, std=0), ScaleParameters(mean=-2, std=0))
+    scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=-2))
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0, 0.05, 0]])
     assert_array_almost_equal(neuron.section(1).points,
@@ -70,7 +78,7 @@ def test_section_scaling():
 
 def test_segment_scaling():
     neuron = Morphology(SIMPLE_PATH)
-    scaling_jitter(neuron, ScaleParameters(mean=1, std=0), ScaleParameters(mean=0, std=0))
+    scale_morphology(neuron, ScaleParameters(mean=2), ScaleParameters())
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0, 10, 0]])
     assert_array_almost_equal(neuron.section(1).points,
@@ -78,11 +86,20 @@ def test_segment_scaling():
 
     neuron = Morphology(SIMPLE_PATH)
     np.random.seed(0)
-    scaling_jitter(neuron, ScaleParameters(mean=1, std=0.5), ScaleParameters(mean=0, std=0))
+    scale_morphology(neuron, ScaleParameters(mean=2, std=0.5), ScaleParameters())
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0., 9.621607, 0.]])
     assert_array_almost_equal(neuron.section(1).points,
                               [[0., 9.621607, 0.], [-11.000393, 9.621607, 0.]])
+
+    # Scaling only on Y axis
+    neuron = Morphology(SIMPLE_PATH)
+    scale_morphology(neuron, ScaleParameters(mean=2, axis=1), ScaleParameters())
+    assert_array_almost_equal(neuron.section(0).points,
+                              [[0, 0, 0], [0, 10, 0]])
+    assert_array_almost_equal(neuron.section(1).points,
+                              [[0, 10, 0], [-5, 10, 0]])
+
 
 
 def test_principal_direction():
@@ -96,8 +113,8 @@ def test_create_clones():
     with TemporaryDirectory('test-create-clones') as folder:
         create_clones(NEURON_PATH, folder, 1,
                       RotationParameters(30, 0, 5),
-                      ScaleParameters(0, 0),
-                      ScaleParameters(0, 0))
+                      ScaleParameters(),
+                      ScaleParameters())
         assert_equal(len(os.listdir(folder)), 1)
         out = os.listdir(folder)[0]
 

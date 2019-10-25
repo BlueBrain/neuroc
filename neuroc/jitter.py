@@ -15,10 +15,20 @@ from morphio.mut import Morphology, Section
 @attr.s
 class ScaleParameters:
     '''
-    The mean and std of a normal law
+    The scaling parameters.
+
+    The scaling factor will be sampled upon a Normal law
     '''
-    mean = attr.ib(type=float)
-    std = attr.ib(type=float)
+
+    #: The mean value of the Normal law.
+    #: 1 means no scaling, 2 means double the size of the object
+    mean = attr.ib(type=float, default=1)
+
+    #: The standard deviation of the Normal law.
+    std = attr.ib(type=float, default=0)
+
+    #: The axis on which to perform the scaling. If None, scaling is performed on all axes.
+    axis = attr.ib(type=int, default=None)
 
 
 @attr.s
@@ -111,6 +121,20 @@ def _clip_minimum_scaling(scalings: float):
     return np.clip(scalings, a_min=0.01, a_max=None)
 
 
+def _broadcast(scaling_factors, axis):
+    '''Broadcast scaling_factor so that it applies to the specified axis.
+
+    If axis is None, the scaling_factor is applied to all axes
+    '''
+    if axis is None:
+        scaling_factors = np.repeat(scaling_factors[np.newaxis], 3, axis=0).T
+    else:
+        ones = np.ones((len(scaling_factors), 3))
+        ones[:, axis] = scaling_factors.T
+        scaling_factors = ones
+    return scaling_factors
+
+
 def _recursive_scale(section: Section,
                      segment_scaling: ScaleParameters,
                      section_scaling: ScaleParameters):
@@ -119,17 +143,21 @@ def _recursive_scale(section: Section,
 
     # 1) Apply scaling jitter segment by segment (each segment has a different scaling factor)
     vectors = _segment_vectors(section, prepend_null_vector=True)
-    scaling_factors = normal_law(1. + segment_scaling.mean, segment_scaling.std,
-                                 size=len(vectors))
+    scaling_factors = normal_law(segment_scaling.mean, segment_scaling.std, size=len(vectors))
     scaling_factors = _clip_minimum_scaling(scaling_factors)
-    vectors = (vectors.T * scaling_factors).T
+    scaling_factors = _broadcast(scaling_factors, segment_scaling.axis)
+    vectors = np.multiply(scaling_factors, vectors)
     cumulative_vectors = np.cumsum(vectors, axis=0)
 
     # 2) Apply scaling jitter at section level
-    section_scaling_factor = normal_law(1. + section_scaling.mean, section_scaling.std)
+    section_scaling_factor = normal_law(section_scaling.mean, section_scaling.std)
     section_scaling_factor = _clip_minimum_scaling(section_scaling_factor)
+    if section_scaling.axis is None:
+        cumulative_vectors *= section_scaling_factor
+    else:
+        cumulative_vectors[:, section_scaling.axis] *= section_scaling_factor
 
-    new_points = section.points[0] + cumulative_vectors * section_scaling_factor
+    new_points = section.points[0] + cumulative_vectors
     children_translation = new_points[-1] - section.points[-1]
 
     for child in section.children:
@@ -138,14 +166,24 @@ def _recursive_scale(section: Section,
     section.points = new_points
 
 
-def scaling_jitter(neuron: Morphology,
-                   segment_scaling: ScaleParameters,
-                   section_scaling: ScaleParameters):
-    '''Jitter sections by scaling them
+def scale_morphology(neuron: Morphology,
+                     segment_scaling: ScaleParameters,
+                     section_scaling: ScaleParameters):
+    '''
+    Scale a morphology.
+
+    The scaling is performed at 2 levels: section and segment.
+
+    The segment scaling scales each segment of the morphology with a
+    different realization of the normal law.
+
+    The sectoin scaling scales all the segments of the same section with
+    the same realization of the normal law.
 
     Args:
-        neuron (morphio.mut.Morphology): the neuron
-        params (Parameters): the parameters
+        neuron (morphio.mut.Morphology): the morphology to scale
+        segment_scaling (ScaleParameters): the segment by segment specific parameters
+        section_scaling (ScaleParameters): the section by section specific parameters
     '''
     for root in neuron.root_sections:
         _recursive_scale(root, segment_scaling, section_scaling)
@@ -159,7 +197,7 @@ def create_clones(filename: str, output_folder: str, nclones: int,
     for i in range(nclones):
         neuron = Morphology(filename)
         rotational_jitter(neuron, rotation_params)
-        scaling_jitter(neuron, segment_scaling, section_scaling)
+        scale_morphology(neuron, segment_scaling, section_scaling)
 
         path = Path(filename)
         neuron.write(os.path.join(output_folder, '{}_clone_{}{}'.format(path.stem, i, path.suffix)))
