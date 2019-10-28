@@ -111,11 +111,12 @@ def test_principal_direction():
 
 def test_create_clones():
     with TemporaryDirectory('test-create-clones') as folder:
-        create_clones(NEURON_PATH, folder, 1,
-                      RotationParameters(30, 0, 5),
-                      ScaleParameters(),
-                      ScaleParameters())
+        paths = create_clones(NEURON_PATH, folder, 1,
+                              RotationParameters(30, 0, 5),
+                              ScaleParameters(),
+                              ScaleParameters())
         assert_equal(len(os.listdir(folder)), 1)
+        assert_equal(len(paths), 1)
         out = os.listdir(folder)[0]
 
         actual = ImmutMorphology(os.path.join(folder, out))

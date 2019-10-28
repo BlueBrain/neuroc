@@ -193,11 +193,20 @@ def create_clones(filename: str, output_folder: str, nclones: int,
                   rotation_params: RotationParameters,
                   segment_scaling: ScaleParameters,
                   section_scaling: ScaleParameters):
-    '''Create clones of the input morphology and write them to disk'''
+    '''Create clones of the input morphology and write them to disk.
+
+    Returns:
+        The list of names of the cloned morphologies
+    '''
+    output_paths = list()
     for i in range(nclones):
         neuron = Morphology(filename)
         rotational_jitter(neuron, rotation_params)
         scale_morphology(neuron, segment_scaling, section_scaling)
 
         path = Path(filename)
-        neuron.write(os.path.join(output_folder, '{}_clone_{}{}'.format(path.stem, i, path.suffix)))
+        name = '{}_clone_{}{}'.format(path.stem, i, path.suffix)
+        neuron.write(os.path.join(output_folder, name))
+        output_paths.append(name)
+
+    return output_paths

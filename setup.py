@@ -5,9 +5,6 @@ import sys
 
 from setuptools import setup, find_packages
 
-if sys.version_info[0] < 3:
-    sys.exit("Sorry, Python < 3 is not supported")
-
 VERSION = imp.load_source("", "neuroc/version.py").__version__
 
 setup(
@@ -23,6 +20,7 @@ setup(
         neuroc=neuroc.cli:cli
     ''',
     license="BBP-internal-confidential",
+    python_requires='>=3.6',
     install_requires=['attrs>=19.1.0',
                       'numpy>=1.15.1',
                       'nose>=1.3.0',
