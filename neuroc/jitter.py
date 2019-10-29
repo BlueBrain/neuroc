@@ -1,6 +1,7 @@
 '''Module to produce clones of a morphology by jittering it'''
 import os
 from pathlib import Path
+from tqdm import tqdm
 
 import attr
 import numpy as np
@@ -35,10 +36,13 @@ class ScaleParameters:
 class RotationParameters:
     '''
     The rotation parameters
+
+    Default values are from:
+    https://bbpcode.epfl.ch/browse/code/platform/BlueJitterSDK/tree/apps/MorphClone.cpp#n33
     '''
-    mean_angle = attr.ib(type=float)
-    std_angle = attr.ib(type=float)
-    numberpoint = attr.ib(int)
+    mean_angle = attr.ib(type=float, default=0.0)
+    std_angle = attr.ib(type=float, default=0.0)
+    numberpoint = attr.ib(type=int, default=5.0)
 
 
 def _principal_direction(section: Section):
@@ -83,7 +87,7 @@ def _recursive_rotational_jitter(section: Section, piecenumber: int,
 
     if not section.children:
         parent = section.parent
-        direction = parent.points[-1] - parent.points[-min(piecenumber, len(parent.points))]
+        direction = parent.points[-1] - parent.points[-int(min(piecenumber, len(parent.points)))]
     else:
         direction = _principal_direction(section)
 
@@ -199,7 +203,7 @@ def create_clones(filename: str, output_folder: str, nclones: int,
         The list of names of the cloned morphologies
     '''
     output_paths = list()
-    for i in range(nclones):
+    for i in tqdm(range(nclones)):
         neuron = Morphology(filename)
         rotational_jitter(neuron, rotation_params)
         scale_morphology(neuron, segment_scaling, section_scaling)
