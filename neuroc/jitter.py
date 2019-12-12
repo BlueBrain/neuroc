@@ -196,12 +196,24 @@ def scale_morphology(neuron: Morphology,
 def create_clones(filename: str, output_folder: str, nclones: int,
                   rotation_params: RotationParameters,
                   segment_scaling: ScaleParameters,
-                  section_scaling: ScaleParameters):
-    '''Create clones of the input morphology and write them to disk.
+                  section_scaling: ScaleParameters,
+                  seed: int = None):
+    '''Create 'nclones' of the input morphology and write them to disk.
+
+    Args:
+        filename (str): the morphology to clone
+        output_folder (str): the folder where to put the clones
+        rotation_params (RotationParameters): the rotation parameters
+        segment_scaling (ScaleParameters): the segment by segment specific parameters
+        section_scaling (ScaleParameters): the section by section specific parameters
+        seed (int): the numpy.random seed
 
     Returns:
         The list of names of the cloned morphologies
     '''
+    if seed is not None:
+        np.random.seed(seed)
+
     output_paths = list()
     for i in tqdm(range(nclones)):
         neuron = Morphology(filename)
