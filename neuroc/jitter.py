@@ -1,7 +1,6 @@
 '''Module to produce clones of a morphology by jittering it'''
 import os
 from pathlib import Path
-from tqdm import tqdm
 
 import attr
 import numpy as np
@@ -215,7 +214,7 @@ def create_clones(filename: str, output_folder: str, nclones: int,
         np.random.seed(seed)
 
     output_paths = list()
-    for i in tqdm(range(nclones)):
+    for i in range(nclones):
         neuron = Morphology(filename)
         rotational_jitter(neuron, rotation_params)
         scale_morphology(neuron, segment_scaling, section_scaling)
