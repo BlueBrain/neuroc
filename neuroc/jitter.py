@@ -34,12 +34,14 @@ class ScaleParameters:
 @attr.s
 class RotationParameters:
     '''
-    The rotation parameters
+    The rotation parameters.
 
     Default values are from:
     https://bbpcode.epfl.ch/browse/code/platform/BlueJitterSDK/tree/apps/MorphClone.cpp#n33
     '''
+    #: Mean angle (in degree)
     mean_angle = attr.ib(type=float, default=0.0)
+    #: Standard deviation angle (in degree)
     std_angle = attr.ib(type=float, default=0.0)
     numberpoint = attr.ib(type=int, default=5.0)
 
