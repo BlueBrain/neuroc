@@ -1,5 +1,10 @@
 '''CLI endpoint'''
+# pylint: disable=import-outside-toplevel
+from pathlib import Path
 import click
+
+import morphio
+from morph_tool.utils import iter_morphology_files
 
 from neuroc.axon_shrinker.shrink import run
 from neuroc.axon_shrinker.viewer import app, set_output_folder, set_input_folder
@@ -8,6 +13,52 @@ from neuroc.axon_shrinker.viewer import app, set_output_folder, set_input_folder
 @click.group()
 def cli():
     '''The CLI object'''
+
+
+@cli.group()
+def scale():
+    '''Scale morphologies with a constant scaling factor.
+
+    Note: it does not scale the diameter
+    '''
+
+# pylint: disable=function-redefined
+@scale.command(short_help='Scale one morphology')
+@click.argument('input_file', type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.argument('output_file')
+@click.option('--scaling', type=float, required=True,
+              help='The scaling value')
+def file(input_file, output_file, scaling):
+    '''Scale a morphology with a constant scaling factor.
+
+    Note: it does not scale the diameter
+    '''
+    from neuroc.jitter import ScaleParameters, scale_morphology
+    neuron = morphio.mut.Morphology(input_file)
+    scale_morphology(neuron,
+                     segment_scaling=ScaleParameters(),
+                     section_scaling=ScaleParameters(mean=scaling))
+    neuron.write(output_file)
+
+
+# pylint: disable=function-redefined
+@scale.command(short_help='Scale all morphologies in a folder')
+@click.argument('input_dir')
+@click.argument('output_dir', type=click.Path(exists=True, file_okay=False, writable=True))
+@click.option('--scaling', type=float, required=True,
+              help='The scaling value')
+def folder(input_dir, output_dir, scaling):
+    '''Scale all morphologies in the folder with a constant scaling factor.
+
+    Note: it does not scale the diameter
+    '''
+    from neuroc.jitter import ScaleParameters, scale_morphology
+    for path in iter_morphology_files(input_dir):
+        neuron = morphio.mut.Morphology(path)
+        scale_morphology(neuron,
+                         segment_scaling=ScaleParameters(),
+                         section_scaling=ScaleParameters(mean=scaling))
+        neuron.write(str(Path(output_dir, Path(path).name)))
 
 
 @cli.command(short_help='Shrink an axon using a web app')
