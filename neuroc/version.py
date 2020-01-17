@@ -1,4 +1,5 @@
 """ Package version. """
 
-VERSION = "0.1.5"
+# When doing a release version, don't forget to update the changelog: ../CHANGELOG.rst
+VERSION = "0.1.6.dev0"
 __version__ = VERSION
