@@ -11,7 +11,7 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
 from nose.tools import ok_
 
 from neuroc.jitter import (rotational_jitter, RotationParameters, ScaleParameters,
-                           scale_morphology, create_clones, _principal_direction, _segment_vectors)
+                           scale_morphology, iter_clones, _principal_direction, _segment_vectors)
 
 DATA_PATH = Path(Path(__file__).parent, 'data')
 
@@ -109,16 +109,11 @@ def test_principal_direction():
     neuron.section(1).points = [[0, 0, 0], [1, 1, 0], [-1, 1, 0]]
     assert_array_equal(_principal_direction(neuron.section(1)), [1, 0, 0])
 
-def test_create_clones():
-    with TemporaryDirectory('test-create-clones') as folder:
-        paths = create_clones(NEURON_PATH, folder, 1,
-                              RotationParameters(30, 0, 5),
-                              ScaleParameters(),
-                              ScaleParameters())
-        assert_equal(len(os.listdir(folder)), 1)
-        assert_equal(len(paths), 1)
-        out = os.listdir(folder)[0]
+def test_iter_clones():
+    for clone in iter_clones(NEURON_PATH, 1,
+                               RotationParameters(30, 0, 5),
+                               ScaleParameters(),
+                               ScaleParameters()):
 
-        actual = ImmutMorphology(os.path.join(folder, out))
         expected = ImmutMorphology(path('neuron_rotation_30_degree.swc'))
-        ok_(not diff(actual, expected, atol=1e-3))
+        ok_(not diff(clone, expected, atol=1e-3))

@@ -1,6 +1,4 @@
 '''Module to produce clones of a morphology by jittering it'''
-import os
-from pathlib import Path
 
 import attr
 import numpy as np
@@ -194,36 +192,28 @@ def scale_morphology(neuron: Morphology,
         _recursive_scale(root, segment_scaling, section_scaling)
 
 
-def create_clones(filename: str, output_folder: str, nclones: int,
-                  rotation_params: RotationParameters,
-                  segment_scaling: ScaleParameters,
-                  section_scaling: ScaleParameters,
-                  seed: int = None):
-    '''Create 'nclones' of the input morphology and write them to disk.
+def iter_clones(filename: str, nclones: int,
+                rotation_params: RotationParameters,
+                segment_scaling: ScaleParameters,
+                section_scaling: ScaleParameters,
+                seed: int = None):
+    '''Yields 'nclones' of the input morphology
 
     Args:
         filename (str): the morphology to clone
-        output_folder (str): the folder where to put the clones
         rotation_params (RotationParameters): the rotation parameters
         segment_scaling (ScaleParameters): the segment by segment specific parameters
         section_scaling (ScaleParameters): the section by section specific parameters
         seed (int): the numpy.random seed
 
-    Returns:
-        The list of names of the cloned morphologies
+    Yields:
+        morphio.mut.Morphology clones
     '''
     if seed is not None:
         np.random.seed(seed)
 
-    output_paths = list()
-    for i in range(nclones):
+    for _ in range(nclones):
         neuron = Morphology(filename)
         rotational_jitter(neuron, rotation_params)
         scale_morphology(neuron, segment_scaling, section_scaling)
-
-        path = Path(filename)
-        name = '{}_clone_{}{}'.format(path.stem, i, path.suffix)
-        neuron.write(os.path.join(output_folder, name))
-        output_paths.append(name)
-
-    return output_paths
+        yield neuron

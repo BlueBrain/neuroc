@@ -2,6 +2,11 @@ ChangeLog
 =========
 
 
+0.1.6
+-----
+
+- create_clones renamed to iter_clones. It now returns a generator of morphio.mut.Morphology clones.
+
 0.1.5
 -----
 
