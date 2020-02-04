@@ -23,7 +23,6 @@ setup(
     python_requires='>=3.6',
     install_requires=['attrs>=19.1.0',
                       'numpy>=1.15.1',
-                      'nose>=1.3.0',
                       'tqdm>=4.23.4',
                       'click>=6.7',
                       'pathlib2>=2.3.3',
