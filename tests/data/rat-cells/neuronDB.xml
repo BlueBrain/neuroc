@@ -1,0 +1,28 @@
+<neurondb>
+  <listing>
+    <morphology>
+      <name>neuron1</name>
+      <mtype>L1_DAC</mtype>
+      <msubtype />
+      <layer>1</layer>
+    </morphology>
+
+    <morphology>
+        <name>neuron2</name>
+        <mtype>L4_TPC</mtype>
+        <msubtype />
+        <layer>4</layer>
+    </morphology>
+
+    <morphology>
+        <name>neuron3</name>
+        <mtype>some-mtype</mtype>
+        <msubtype />
+        <layer>3</layer>
+    </morphology>
+
+  </listing>
+  <overview>
+    <count>2</count>
+  </overview>
+</neurondb>

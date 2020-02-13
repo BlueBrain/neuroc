@@ -10,6 +10,9 @@ from neuroc.axon_shrinker.shrink import run
 from neuroc.axon_shrinker.viewer import app, set_output_folder, set_input_folder
 
 
+REQUIRED_DIR = click.Path(exists=True, readable=True, dir_okay=True, resolve_path=True)
+
+
 @click.group()
 def cli():
     '''The CLI object'''
@@ -17,13 +20,18 @@ def cli():
 
 @cli.group()
 def scale():
+    '''Scaling utilities'''
+
+
+@scale.group()
+def simple():
     '''Scale morphologies with a constant scaling factor.
 
     Note: it does not scale the diameter
     '''
 
 # pylint: disable=function-redefined
-@scale.command(short_help='Scale one morphology')
+@simple.command(short_help='Scale one morphology')
 @click.argument('input_file', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('output_file')
 @click.option('--scaling', type=float, required=True,
@@ -42,7 +50,7 @@ def file(input_file, output_file, scaling):
 
 
 # pylint: disable=function-redefined
-@scale.command(short_help='Scale all morphologies in a folder')
+@simple.command(short_help='Scale all morphologies in a folder')
 @click.argument('input_dir')
 @click.argument('output_dir', type=click.Path(exists=True, file_okay=False, writable=True))
 @click.option('--scaling', type=float, required=True,
@@ -93,3 +101,47 @@ def axon_shrinker(files_folder, annotations_folder, output_folder, nsamples, hei
     neuroc axon_shrinker files_dir annotations_dir output_dir
     '''
     run(files_folder, annotations_folder, output_folder, nsamples, heights)
+
+
+# pylint: disable=function-redefined
+@scale.command(short_help='Scale rat cell to human cell dimensions')
+@click.argument('human_dir', type=REQUIRED_DIR)
+@click.argument('rat_dir', type=REQUIRED_DIR)
+@click.argument('mtype_mapping', type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.argument('output_dir', type=click.Path(exists=True, file_okay=False, writable=True))
+def rat_to_human(human_dir, rat_dir, mtype_mapping, output_dir):
+    '''Scale rat cells to human cells diamensions
+
+    HUMAN_DIR should be a dir with the following structure:
+        - Must be **only** composed of sub-folders whose filename is a layer name
+        - Each sub folder should be composed of morphology files whose first part of the filename
+      before the '_' is considered as the **mtype**
+
+    RAT_DIR should be a directory containing rat morphology files **and a neuronDB.xml file.
+
+    MTYPE_MAPPING_FILE is a YAML file containing a dictionary where:
+       - a key is a human mtype or **all**
+       - the value is a list of rat mtypes to associate with the key. Or a list of one 'all' element
+
+    \b
+    Algorithm:
+    1) Human and rat mtypes are grouped together according to the mapping
+       in MTYPE_MAPPING_FILE
+    2) For each group the average among all cells of the same group is computed for
+       the following features:
+       - standard deviation of dendritic point along Y
+       - standard deviation of the radial coordinate in the XZ plane for dendritic points
+       - averaged diameters of dendritic points
+    3) Use the ratio of the human feature to rat feature to scale rat morphologies:
+       - Use 1st feature to scale along Y
+       - Use 2nd feature to scale along XZ
+       - Use 3rd feature to scale the diameters
+
+    See issue:
+    https://bbpteam.epfl.ch/project/issues/browse/IHNM-6
+    '''
+    from neuroc.rat_to_human import scale_rat_cells
+    scale_rat_cells(Path(human_dir),
+                    Path(rat_dir),
+                    Path(mtype_mapping),
+                    Path(output_dir))

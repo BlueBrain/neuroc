@@ -1,0 +1,26 @@
+L1:
+  PSC: [DAC, HAC]
+  NGC: [NGC-DA, NGC-SA]
+  AC: [LAC]
+  RHC: [SAC]
+
+L2:
+    AC: [LBC, MC]
+    BC: [NBC, SBC, NGC]
+    BPC: [BP, DBC]
+    BTC: [BTC]
+    GABA: [CHC]
+    MPC: [NTC, LBC]
+
+L3:
+    AC: [all]
+
+L4:
+    BPC: [BP, DBC]
+    BTC: [BTC, MC, LBC, CHC]
+    MPC: [BTC, LBC, SBC, NBC, MGC]
+
+L5:
+    BPC: [BP, DBC]
+    BTC: [BTC, MC, LBC, CHC]
+    MPC: [BTC, LBC, SBC, NBC, MGC]

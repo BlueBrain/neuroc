@@ -1,0 +1,17 @@
+L1:
+  all: [BPC, HPC, IPC, TPC, UPC]
+
+L2:
+  all: [BPC, HPC, IPC, TPC, UPC]
+
+L3:
+  all: [BPC, HPC, IPC, TPC, UPC]
+
+L4:
+  all: [BPC, HPC, IPC, TPC, UPC]
+
+L5:
+  all: [BPC, HPC, IPC, TPC, UPC]
+
+L6:
+  all: [BPC, HPC, IPC, TPC, UPC]

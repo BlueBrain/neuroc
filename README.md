@@ -29,10 +29,43 @@ In a shell, do:
 ```bash
 neuroc --help
 ```
-to list all functionalities, or:
+to list all functionalities.
+
+
+## Axon shrinker
 
 
 ```bash
 neuroc axon_shrinker files_dir annotations_dir output_dir
 ```
 to shrink axons.
+
+
+## Rat to human scaling
+```bash
+neuroc scale rat-to-human HUMAN_DIR RAT_DIR MTYPE_MAPPING OUTPUT_DIR
+```
+
+Will scale the rat cells in RAT_DIR to human cells dimensions.
+HUMAN\_DIR should be a dir with the following structure:
+- Must be **only** composed of sub-folders whose filename is a layer name
+- Each sub folder should be composed of morphology files whose first part of the filename before the '_' is considered as the **mtype**
+
+RAT\_DIR should be a directory containing rat morphology files **and a neuronDB.xml file.
+
+MTYPE\_MAPPING\_FILE is a YAML file containing a dictionary where:
+- a key is a human mtype or **all**
+- the value is a list of rat mtypes to associate with the key. Or a list of one 'all' element
+```
+ls
+$ RAT_DIR
+
+$ RAT_DIR\L1
+$ RAT_DIR\L2
+$ ...
+$ RAT_DIR\L6
+
+$ RAT_DIR\L1\AC_cell_name.swc
+$ RAT_DIR\L1\BTC_cell_name.swc
+$ ...
+```
