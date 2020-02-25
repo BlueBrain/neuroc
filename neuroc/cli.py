@@ -140,8 +140,8 @@ def rat_to_human(human_dir, rat_dir, mtype_mapping, output_dir):
     See issue:
     https://bbpteam.epfl.ch/project/issues/browse/IHNM-6
     '''
-    from neuroc.rat_to_human import scale_rat_cells
-    scale_rat_cells(Path(human_dir),
+    from neuroc.rat_to_human import scale_all_cells
+    scale_all_cells(Path(human_dir),
                     Path(rat_dir),
                     Path(mtype_mapping),
                     Path(output_dir))

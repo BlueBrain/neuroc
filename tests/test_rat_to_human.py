@@ -3,7 +3,7 @@ import warnings
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from neurom import load_neuron
+from neurom import load_neuron, COLS
 from nose.tools import assert_dict_equal, assert_equal, assert_raises
 from numpy.testing import assert_almost_equal, assert_array_almost_equal
 
@@ -112,14 +112,52 @@ def test_mtype_matcher():
 
     assert_raises(ValueError, test_module.mtype_matcher, INHIBITORY_PATH, RAT_PATH, DATA / 'broken-mapping.yaml')
 
-
-def test_scale_rat_cells():
+def test_scale_all_cells():
     with TemporaryDirectory('test-scale-rat-cells') as output_folder:
         output_folder = Path(output_folder)
         with warnings.catch_warnings(record=True):
-            test_module.scale_rat_cells(INHIBITORY_PATH, RAT_PATH, INH_MAPPING_PATH, output_folder)
+            test_module.scale_all_cells(INHIBITORY_PATH, RAT_PATH, INH_MAPPING_PATH, output_folder)
         assert_equal(list(output_folder.rglob('*')),
                      [
                          output_folder / 'neuron1_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5',
                          output_folder / 'neuron3_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.h5',
                      ])
+
+
+def test_scale_single_coordinates():
+    orig_neuron = Morphology(DATA / 'Neuron.swc')
+    neuron = Morphology(orig_neuron)
+    scaling_value = 4
+    test_module.scale_coordinates(neuron, scaling_value, COLS.Y)
+    points, orig_points = neuron.section(0).points, orig_neuron.section(0).points
+    assert_array_almost_equal(points[:, COLS.Y], orig_points[:, COLS.Y] * scaling_value)
+    assert_array_almost_equal(points[:, COLS.XZ], orig_points[:, COLS.XZ])
+
+
+def test_scale_double_coordinates():
+    orig_neuron = Morphology(DATA / 'Neuron.swc')
+    neuron = Morphology(orig_neuron)
+    scaling_value = 4
+    test_module.scale_coordinates(neuron, scaling_value, COLS.XZ)
+    points, orig_points = neuron.section(0).points, orig_neuron.section(0).points
+    assert_array_almost_equal(points[:, COLS.XZ], orig_points[:, COLS.XZ] * scaling_value)
+    assert_array_almost_equal(points[:, COLS.Y], orig_points[:, COLS.Y])
+
+
+def test_scale_one_cells():
+    filename = DATA / 'rp110711_C3_idA.h5'
+    orig = Morphology(filename)
+    neuron = test_module.scale_one_cell(filename, 2.5, 1, 1)
+
+    s1, s2 = orig.section(0), neuron.section(0)
+    assert_array_almost_equal(s2.points[:, COLS.Y] / s1.points[:, COLS.Y], 2.5)
+    assert_array_almost_equal(s2.points[:, COLS.XZ] / s1.points[:, COLS.XZ], 1)
+    assert_array_almost_equal(s2.diameters / s1.diameters, 1)
+
+    orig = Morphology(filename)
+    neuron = test_module.scale_one_cell(filename, 3.3, 4.5, 12.7)
+
+    s1, s2 = orig.section(0), neuron.section(0)
+    assert_array_almost_equal(s2.points[:, COLS.Y] / s1.points[:, COLS.Y], 3.3)
+    assert_array_almost_equal(s2.points[:, COLS.XZ] / s1.points[:, COLS.XZ], 4.5)
+    assert_array_almost_equal(s2.diameters / s1.diameters, 12.7)

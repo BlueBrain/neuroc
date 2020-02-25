@@ -17,6 +17,7 @@ Scale rat cells to human cells diamensions
    - scale the diameters
 '''
 
+import logging
 import os
 import warnings
 from collections import defaultdict
@@ -26,13 +27,14 @@ from typing import Callable, Iterable, List
 import numpy as np
 import yaml
 from morph_tool.utils import iter_morphology_files
-from morphology_repair_workflow.morphdb import MorphologyDB
+from morphology_repair_workflow.morphdb import MorphologyDB, MTYPE_MSUBTYPE_SEPARATOR
 from neurom import COLS, NeuriteType, iter_neurites, load_neuron
 from neurom.core._neuron import Neuron
 from tqdm import tqdm
 
 from morphio.mut import Morphology
-from neuroc.jitter import ScaleParameters, scale_morphology
+
+L = logging.getLogger('neuroc')
 
 
 def validate_folders(human_folder: Path, rat_folder: Path):
@@ -69,7 +71,8 @@ def morphology_filenames(folder: Path):
     for morphology in iter(db):
         path = _find_filepath(folder, morphology.name)
         if path:
-            mtypes[morphology.mtype].append(path)
+            sub_mtype_removed = morphology.mtype.split(MTYPE_MSUBTYPE_SEPARATOR)[0]
+            mtypes[sub_mtype_removed].append(path)
 
     return dict(mtypes)
 
@@ -105,7 +108,7 @@ def dendritic_points(neuron: Neuron):
 def dendritic_diameter(neuron: Neuron):
     '''Get the dendritic diameter
     '''
-    radii = np.vstack([neurite.points[:, COLS.R]
+    radii = np.hstack([neurite.points[:, COLS.R]
                        for neurite in iter_neurites(neuron, filt=not_axon)])
     return radii.mean() * 2.
 
@@ -189,6 +192,7 @@ def mtype_matcher(human_folder: Path,
     rat_morphologies = morphology_filenames(rat_folder)
     human_cells_dict = human_cells_per_layer_mtype(human_folder)
 
+    missing_mappings = list()
     for layer in mtype_mapping:
         for human_mtype, rat_mtypes in mtype_mapping[layer].items():
             rat_cells = list()
@@ -208,14 +212,19 @@ def mtype_matcher(human_folder: Path,
                                      'If you specify "all", it should be the only element'
                                      ' of the mapping'.format(human_mtype, rat_mtypes))
 
-                if mtype_name(layer, mtype) not in rat_morphologies:
-                    warnings.warn('{} not found among available rat cells'.format(
-                        mtype_name(layer, mtype)))
+                mtype_name_ = mtype_name(layer, mtype)
+                if mtype_name_ not in rat_morphologies:
+                    missing_mappings.append((layer, human_mtype, mtype_name_))
                     continue
                 rat_cells.extend(rat_morphologies[mtype_name(layer, mtype)])
 
             if human_cells or rat_cells:
                 zipped.append((human_cells, rat_cells))
+    if missing_mappings:
+        warnings.warn(
+            'The following HUMAN -> RAT mappings did not return any rat cells:\n{}'.format(
+                '\n'.join('{layer}: {human} -> {rat}'.format(layer=layer, human=human, rat=rat)
+                          for (layer, human, rat) in missing_mappings)))
 
     return zipped
 
@@ -234,21 +243,22 @@ def iter_scaling_and_rat(human_folder: Path,
             feature among groups (human/rat) of mapped cells will be used to compute
             the scaling factor
     '''
-    for humans, rats in mtype_matcher(human_folder, rat_folder, mtype_mapping_file):
+    for humans, rats in tqdm(list(mtype_matcher(human_folder, rat_folder, mtype_mapping_file))):
         if not humans:
             continue
         if not rats:
-            warnings.warn('No matching rat morphologies for human mtypes: {}\n'
-                          'Skipping the scaling'.format(humans))
+            warnings.warn('No matching rat morphologies for the following human mtypes. '
+                          'Scaling will be skipped for:\n{}'.format('\n'.join(map(str, humans))))
             continue
 
+        factors = scaling_factors(humans, rats, funcs)
         for rat in rats:
-            yield rat, scaling_factors(humans, rats, funcs)
+            yield rat, factors
 
 
 def scale_diameter(neuron: Morphology,
                    scaling_factor: float):
-    '''Scale a neuron by a constant scaling factor:
+    '''In-place scaling of a neuron diameters by a constant scaling factor.
 
     Args:
         neuron: a neuron
@@ -258,7 +268,40 @@ def scale_diameter(neuron: Morphology,
         section.diameters = scaling_factor * section.diameters
 
 
-def scale_rat_cells(human_folder: Path,
+def scale_coordinates(neuron: Morphology, scaling_factor: float, axis: COLS) -> None:
+    '''In-place scaling of a neuron neurites coordinate by a constant scaling factor.
+
+    Args:
+        neuron: a neuron
+        scaling_factor: the diameter scaling factor (ie. 2 means it doubles the coordinates)
+        axis: the NeuroM axis (or axes) on which to perform the scaling
+    '''
+    for section in neuron.iter():
+        points = np.copy(section.points)
+        points[:, axis] *= scaling_factor
+        section.points = points
+
+
+def scale_one_cell(path: Path, y_scale: float, xz_scale: float, diam_scale: float) -> Morphology:
+    '''Scale the coordinates and diameters of a cell.
+
+    Args:
+        filename: a neuron path
+        y_scale: Y scaling factor
+        xz_scale: XZ scaling factor
+        diam_scale: diameter scaling factor
+
+    Returns:
+        a scaled morphology
+    '''
+    neuron = Morphology(path)
+    scale_coordinates(neuron, y_scale, COLS.Y)
+    scale_coordinates(neuron, xz_scale, COLS.XZ)
+    scale_diameter(neuron, diam_scale)
+    return neuron
+
+
+def scale_all_cells(human_folder: Path,
                     rat_folder: Path,
                     mtype_mapping_file: Path,
                     output_folder: Path):
@@ -298,16 +341,13 @@ def scale_rat_cells(human_folder: Path,
                                             rat_folder,
                                             mtype_mapping_file,
                                             scaling_variables)
-    for rat, (y_scale, xz_scale, diam_scale) in tqdm(list(rats_and_factors)):
-        path = Path(rat)
-        neuron = Morphology(path)
-        scale_morphology(neuron,
-                         ScaleParameters(),  # no segment level scaling is performed
-                         ScaleParameters(mean=y_scale, axis=COLS.Y))
-        scale_morphology(neuron,
-                         ScaleParameters(),  # no segment level scaling is performed
-                         ScaleParameters(mean=xz_scale, axis=COLS.XZ))
-        scale_diameter(neuron, diam_scale)
-        name_extension = '_-_Y-Scale_{}_-_XZ-Scale_{}_-_Diam-Scale_{}.h5'.format(
-            y_scale, xz_scale, diam_scale)
-        neuron.write(Path(output_folder, path.stem + name_extension))
+
+    L.info('Grouping human and rat cells. This may take a while...')
+    iterable = list(rats_and_factors)
+
+    L.info('Scaling rat cells. This may take a while...')
+    for rat, (y_scale, xz_scale, diam_scale) in tqdm(iterable):
+        neuron = scale_one_cell(rat, y_scale, xz_scale, diam_scale)
+        neuron.write(Path(output_folder,
+                          '{}_-_Y-Scale_{}_-_XZ-Scale_{}_-_Diam-Scale_{}.h5'.format(
+                              rat.stem, y_scale, xz_scale, diam_scale)))
