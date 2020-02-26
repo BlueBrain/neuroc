@@ -112,17 +112,6 @@ def test_mtype_matcher():
 
     assert_raises(ValueError, test_module.mtype_matcher, INHIBITORY_PATH, RAT_PATH, DATA / 'broken-mapping.yaml')
 
-def test_scale_all_cells():
-    with TemporaryDirectory('test-scale-rat-cells') as output_folder:
-        output_folder = Path(output_folder)
-        with warnings.catch_warnings(record=True):
-            test_module.scale_all_cells(INHIBITORY_PATH, RAT_PATH, INH_MAPPING_PATH, output_folder)
-        assert_equal(list(output_folder.rglob('*')),
-                     [
-                         output_folder / 'neuron1_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5',
-                         output_folder / 'neuron3_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.h5',
-                     ])
-
 
 def test_scale_single_coordinates():
     orig_neuron = Morphology(DATA / 'Neuron.swc')
@@ -161,3 +150,16 @@ def test_scale_one_cells():
     assert_array_almost_equal(s2.points[:, COLS.Y] / s1.points[:, COLS.Y], 3.3)
     assert_array_almost_equal(s2.points[:, COLS.XZ] / s1.points[:, COLS.XZ], 4.5)
     assert_array_almost_equal(s2.diameters / s1.diameters, 12.7)
+
+
+def test_scale_all_cells():
+    with TemporaryDirectory('test-scale-rat-cells') as output_folder:
+        output_folder = Path(output_folder)
+        with warnings.catch_warnings(record=True):
+            test_module.scale_all_cells(INHIBITORY_PATH, RAT_PATH, INH_MAPPING_PATH, output_folder)
+        assert_equal(set(output_folder.rglob('*')),
+                     {
+                         output_folder / 'metadata.csv',
+                         output_folder / 'neuron1_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5',
+                         output_folder / 'neuron3_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.h5',
+                     })

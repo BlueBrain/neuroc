@@ -64,4 +64,4 @@ def test_rat_to_human():
                                      str(DATA / 'inh-mapping.yaml'),
                                      str(folder)])
         assert_equal(result.exit_code, 0, result.exception)
-        assert_equal(len(list(folder.glob('*'))), 2)
+        assert_equal(len(list(folder.glob('*'))), 3)

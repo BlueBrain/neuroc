@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Callable, Iterable, List
 
 import numpy as np
+import pandas as pd
 import yaml
 from morph_tool.utils import iter_morphology_files
 from morphology_repair_workflow.morphdb import MorphologyDB, MTYPE_MSUBTYPE_SEPARATOR
@@ -346,8 +347,13 @@ def scale_all_cells(human_folder: Path,
     iterable = list(rats_and_factors)
 
     L.info('Scaling rat cells. This may take a while...')
+
+    metadata = list()
     for rat, (y_scale, xz_scale, diam_scale) in tqdm(iterable):
+        metadata.append([rat, y_scale, xz_scale, diam_scale])
         neuron = scale_one_cell(rat, y_scale, xz_scale, diam_scale)
         neuron.write(Path(output_folder,
                           '{}_-_Y-Scale_{}_-_XZ-Scale_{}_-_Diam-Scale_{}.h5'.format(
                               rat.stem, y_scale, xz_scale, diam_scale)))
+    metadata_df = pd.DataFrame(data=metadata, columns=['name', 'y', 'xz', 'diam'])
+    metadata_df.to_csv(output_folder / 'metadata.csv', index=False)
