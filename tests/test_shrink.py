@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 
-import morphio
+from morphio import SectionType
 from morphio.mut import Morphology
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_equal)
@@ -21,7 +21,7 @@ def _neuron():
 
 
 def _get_axon(neuron):
-    return next(sec for sec in neuron.root_sections if sec.type == morphio.axon)
+    return next(sec for sec in neuron.root_sections if sec.type == SectionType.axon)
 
 
 def test_section_path_length():
@@ -52,7 +52,7 @@ def test_cut_branch():
 
     start_cut = _get_axon(neuron)
     cut_branch(neuron, upward=False, start_cut=start_cut, y_start_cut=-2.5)
-    new_axon = next(sec for sec in neuron.root_sections if sec.type == morphio.axon)
+    new_axon = next(sec for sec in neuron.root_sections if sec.type == SectionType.axon)
     assert_array_equal(new_axon.points,
                        [[0, 0, 1], [0, -2.5, 0.375]])
     assert_array_equal(new_axon.diameters,
@@ -73,7 +73,7 @@ def test_add_vertical_segment():
 
 def test_graft_branch():
     neuron = _neuron()
-    dendrite = next(sec for sec in neuron.root_sections if sec.type != morphio.axon)
+    dendrite = next(sec for sec in neuron.root_sections if sec.type != SectionType.axon)
 
     end_axon = _get_axon(neuron).children[1]
 

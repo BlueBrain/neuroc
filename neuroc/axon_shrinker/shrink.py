@@ -8,7 +8,7 @@ import xml.etree.ElementTree
 
 import numpy as np
 from tqdm import tqdm
-from morphio import PointLevel, SectionType, set_maximum_warnings, upstream
+from morphio import PointLevel, SectionType, set_maximum_warnings, IterType
 from morphio.mut import Morphology
 
 from neuroc.utils.xml import read_placement_rules, update_rule
@@ -26,7 +26,7 @@ def section_path_lengths(neurite):
             for s in neurite.iter()}
 
     return {section.id: sum(dist[upstream.id]
-                            for upstream in section.iter(upstream))
+                            for upstream in section.iter(IterType.upstream))
             for section in neurite.iter()}
 
 
@@ -56,7 +56,7 @@ def get_main_branch_sections(neuron, root):
     # index of the section with the longest path length
     idx_root_end = max(path_lengths.items(), key=operator.itemgetter(1))[0]
     root_end = neuron.section(idx_root_end)
-    main_branch_sections = list(reversed(list(root_end.iter(upstream))))
+    main_branch_sections = list(reversed(list(root_end.iter(IterType.upstream))))
     return main_branch_sections
 
 
