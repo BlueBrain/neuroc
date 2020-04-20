@@ -3,6 +3,8 @@ import warnings
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pandas as pd
+from pandas.testing import assert_frame_equal
 from neurom import load_neuron, COLS
 from nose.tools import assert_dict_equal, assert_equal, assert_raises
 from numpy.testing import assert_almost_equal, assert_array_almost_equal
@@ -86,29 +88,37 @@ def test_mtype_matcher():
     def assert_same_groups(actual, expected):
         assert len(actual) == len(expected)
         for (act_left, act_right), (exp_left, exp_right) in zip(actual, expected):
-            assert {str(path) for path in act_left} == {str(path) for path in exp_left}
+            assert_equal({str(path) for path in act_left},
+                         {str(path) for path in exp_left})
             assert_equal({str(path) for path in act_right},
                          {str(path) for path in exp_right})
 
-    assert_same_groups(groups,
-                       [([INHIBITORY_PATH / 'L1/PSC_some-cell-name.swc'], [RAT_PATH / 'neuron1.swc']),
-                        ([INHIBITORY_PATH / 'L2/AC_some-cell-name.swc'], []),
+    assert_dict_equal(groups,
+                      {
+                          ('L1', 'PSC'): ([INHIBITORY_PATH / 'L1/PSC_some-cell-name.swc'],
+                                          [RAT_PATH / 'neuron1.swc']),
+                          ('L2', 'AC'): ([INHIBITORY_PATH / 'L2/AC_some-cell-name.swc'], []),
 
-                      # The following line is the result of the "ALL" matching
-                      ([INHIBITORY_PATH / 'L3/AC_some-cell-name.swc'], [RAT_PATH / 'neuron3.swc']),
-                        ([INHIBITORY_PATH / 'L4/BTC_some-cell-name.swc'], []),
-                        ([INHIBITORY_PATH / 'L5/MPC_some-cell-name.swc'], [])])
+                          # The following line is the result of the "ALL" matching
+                          ('L3', 'AC'): ([INHIBITORY_PATH / 'L3/AC_some-cell-name.swc'],
+                                         [RAT_PATH / 'neuron3.swc']),
 
+                          ('L4', 'BTC'): ([INHIBITORY_PATH / 'L4/BTC_some-cell-name.swc'], []),
+                          ('L5', 'MPC'): ([INHIBITORY_PATH / 'L5/MPC_some-cell-name.swc'], [])
+                      })
 
     with warnings.catch_warnings(record=True):
         groups = test_module.mtype_matcher(EXCITATORY_PATH, RAT_PATH, EXC_MAPPING_PATH)
 
-    assert_same_groups(groups,
-                       [([EXCITATORY_PATH / 'L1/PSC_some-cell-name.swc'], []),
-                        ([EXCITATORY_PATH / 'L2/AC_some-cell-name.swc'], []),
-                        ([EXCITATORY_PATH / 'L3/AC_some-cell-name.swc'], []),
-                        ([EXCITATORY_PATH / 'L4/BTC_some-cell-name.swc'], [RAT_PATH / 'neuron2.swc']),
-                        ([EXCITATORY_PATH / 'L5/MPC_some-cell-name.swc'], [])])
+    assert_dict_equal(groups,
+                      {
+                          ('L1', 'all'): ([EXCITATORY_PATH / 'L1/PSC_some-cell-name.swc'], []),
+                          ('L2', 'all'): ([EXCITATORY_PATH / 'L2/AC_some-cell-name.swc'], []),
+                          ('L3', 'all'): ([EXCITATORY_PATH / 'L3/AC_some-cell-name.swc'], []),
+                          ('L4', 'all'): ([EXCITATORY_PATH / 'L4/BTC_some-cell-name.swc'],
+                                          [RAT_PATH / 'neuron2.swc']),
+                          ('L5', 'all'): ([EXCITATORY_PATH / 'L5/MPC_some-cell-name.swc'], [])
+                      })
 
     assert_raises(ValueError, test_module.mtype_matcher, INHIBITORY_PATH, RAT_PATH, DATA / 'broken-mapping.yaml')
 
@@ -159,7 +169,15 @@ def test_scale_all_cells():
             test_module.scale_all_cells(INHIBITORY_PATH, RAT_PATH, INH_MAPPING_PATH, output_folder)
         assert_equal(set(output_folder.rglob('*')),
                      {
-                         output_folder / 'metadata.csv',
+                         output_folder / 'neurondb.dat',
                          output_folder / 'neuron1_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5',
                          output_folder / 'neuron3_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.h5',
                      })
+
+        df = pd.read_csv(output_folder / 'neurondb.dat', names=['name', 'layer', 'mtype'])
+        assert_frame_equal(df,
+                           pd.DataFrame({'name': [str(RAT_PATH / 'neuron1.swc'),
+                                                  str(RAT_PATH / 'neuron3.swc')],
+                                         'layer': ['L1', 'L3'],
+                                         'mtype': ['PSC', 'AC'],
+                           }))
