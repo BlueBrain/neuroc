@@ -1,3 +1,3 @@
-# "all" should always be used as a single mtype
+# "all" value should always be used as a single mtype
 L3:
     AC: [all, AND, OTHER, MTYPES]

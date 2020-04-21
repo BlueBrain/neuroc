@@ -1,0 +1,3 @@
+# "all" key is now deprecated
+L3:
+    all: [SOME, MTYPES]

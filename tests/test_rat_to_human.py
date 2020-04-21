@@ -112,15 +112,16 @@ def test_mtype_matcher():
 
     assert_dict_equal(groups,
                       {
-                          ('L1', 'all'): ([EXCITATORY_PATH / 'L1/PSC_some-cell-name.swc'], []),
-                          ('L2', 'all'): ([EXCITATORY_PATH / 'L2/AC_some-cell-name.swc'], []),
-                          ('L3', 'all'): ([EXCITATORY_PATH / 'L3/AC_some-cell-name.swc'], []),
-                          ('L4', 'all'): ([EXCITATORY_PATH / 'L4/BTC_some-cell-name.swc'],
+                          ('L1', 'PC'): ([EXCITATORY_PATH / 'L1/PC_some-cell-name.swc'], []),
+                          ('L2', 'PC'): ([EXCITATORY_PATH / 'L2/PC_some-cell-name.swc'], []),
+                          ('L3', 'PC'): ([EXCITATORY_PATH / 'L3/PC_some-cell-name.swc'], []),
+                          ('L4', 'PC'): ([EXCITATORY_PATH / 'L4/PC_some-cell-name.swc'],
                                           [RAT_PATH / 'neuron2.swc']),
-                          ('L5', 'all'): ([EXCITATORY_PATH / 'L5/MPC_some-cell-name.swc'], [])
+                          ('L5', 'PC'): ([EXCITATORY_PATH / 'L5/PC_some-cell-name.swc'], [])
                       })
 
     assert_raises(ValueError, test_module.mtype_matcher, INHIBITORY_PATH, RAT_PATH, DATA / 'broken-mapping.yaml')
+    assert_raises(ValueError, test_module.mtype_matcher, INHIBITORY_PATH, RAT_PATH, DATA / 'broken-mapping-with-all-key.yaml')
 
 
 def test_scale_single_coordinates():
@@ -174,10 +175,12 @@ def test_scale_all_cells():
                          output_folder / 'neuron3_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.h5',
                      })
 
-        df = pd.read_csv(output_folder / 'neurondb.dat', names=['name', 'layer', 'mtype'])
+        df = pd.read_csv(output_folder / 'neurondb.dat', names=['name', 'layer', 'mtype'], sep=' ')
         assert_frame_equal(df,
-                           pd.DataFrame({'name': [str(RAT_PATH / 'neuron1.swc'),
-                                                  str(RAT_PATH / 'neuron3.swc')],
+                           pd.DataFrame({'name': [
+                               'neuron1_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0',
+                               'neuron3_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0'
+                           ],
                                          'layer': ['L1', 'L3'],
                                          'mtype': ['PSC', 'AC'],
                            }))

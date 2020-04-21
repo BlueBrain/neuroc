@@ -149,7 +149,7 @@ def human_cells_per_layer_mtype(folder: Path):
     '''returns a Dict[mtype, path] of all the human cells
 
     FOLDER should be composed of sub-folders with the name of the layer.
-    Mtype is take from the first part of the cell filename
+    Mtype is taken from the first part of the cell filename
 
     Example:
     - folder/L1/DAC_neuron-bla-bla.swc
@@ -199,9 +199,9 @@ def mtype_matcher(human_folder: Path,
             rat_cells = list()
 
             if human_mtype.lower() == 'all':
-                human_cells = list(iter_morphology_files(Path(human_folder, layer)))
-            else:
-                human_cells = human_cells_dict[layer][human_mtype]
+                raise ValueError('human mtype "all" in YAML mapping file is no longer supported\n'
+                                 'Please use only real mtypes to define the mapping')
+            human_cells = human_cells_dict[layer][human_mtype]
 
             if len(rat_mtypes) == 1 and rat_mtypes[0].lower() == 'all':
                 zipped[(layer, human_mtype)] = (
@@ -353,10 +353,9 @@ def scale_all_cells(human_folder: Path,
 
     metadata = list()
     for human_layer, human_mtype, rat, (y_scale, xz_scale, diam_scale) in tqdm(iterable):
-        metadata.append([rat, human_layer, human_mtype])
-
         name = f'{rat.stem}_-_Y-Scale_{y_scale}_-_XZ-Scale_{xz_scale}_-_Diam-Scale_{diam_scale}.h5'
         scale_one_cell(rat, y_scale, xz_scale, diam_scale).write(output_folder / name)
+        metadata.append([Path(name).stem, human_layer, human_mtype])
 
     pd.DataFrame(data=metadata, columns=['name', 'layer', 'mtype']).to_csv(
-        output_folder / 'neurondb.dat', index=False, header=False)
+        output_folder / 'neurondb.dat', index=False, header=False, sep=' ')
