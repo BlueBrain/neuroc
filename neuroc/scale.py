@@ -141,7 +141,7 @@ def _broadcast(scaling_factors, axis):
 def scale_section(section: Section,
                   section_scaling: ScaleParameters = None,
                   segment_scaling: ScaleParameters = None,
-                  recursive=False):
+                  recursive=False) -> None:
     '''Scale the current section (and its descendents if recursive == True).
 
     Args:
@@ -188,7 +188,7 @@ def scale_section(section: Section,
 
 def scale_morphology(neuron: Morphology,
                      section_scaling: ScaleParameters = None,
-                     segment_scaling: ScaleParameters = None):
+                     segment_scaling: ScaleParameters = None) -> None:
     '''
     Scale a morphology.
 
@@ -201,27 +201,29 @@ def scale_morphology(neuron: Morphology,
     the same realization of the normal law.
 
     Args:
-        neuron (morphio.mut.Morphology): the morphology to scale
-        segment_scaling (ScaleParameters): the segment by segment specific parameters
-        section_scaling (ScaleParameters): the section by section specific parameters
+        neuron: the morphology to scale
+        section_scaling: the section by section specific parameters
+        segment_scaling: the segment by segment specific parameters
     '''
     for root in neuron.root_sections:
         scale_section(root, section_scaling, segment_scaling, recursive=True)
 
 
-def iter_clones(filename: str, nclones: int,
-                rotation_params: RotationParameters,
-                segment_scaling: ScaleParameters,
-                section_scaling: ScaleParameters,
-                seed: int = None):
-    '''Yields 'nclones' of the input morphology
+def yield_clones(filename: str,
+                 rotation_params: RotationParameters = None,
+                 section_scaling: ScaleParameters = None,
+                 segment_scaling: ScaleParameters = None,
+                 seed: int = None) -> Morphology:
+    '''Yields clones of the input morphology
 
     Args:
-        filename (str): the morphology to clone
-        rotation_params (RotationParameters): the rotation parameters
-        segment_scaling (ScaleParameters): the segment by segment specific parameters
-        section_scaling (ScaleParameters): the section by section specific parameters
-        seed (int): the numpy.random seed
+        filename: the morphology to clone
+        rotation_params: the rotation parameters
+        section_scaling: the section by section specific parameters
+        segment_scaling: the segment by segment specific parameters
+        seed: the numpy.random seed
+
+    Warning: this is an infinite generator
 
     Yields:
         morphio.mut.Morphology clones
@@ -229,8 +231,11 @@ def iter_clones(filename: str, nclones: int,
     if seed is not None:
         np.random.seed(seed)
 
-    for _ in range(nclones):
-        neuron = Morphology(filename)
-        rotational_jitter(neuron, rotation_params)
-        scale_morphology(neuron, section_scaling, segment_scaling, )
-        yield neuron
+    neuron = Morphology(filename)
+    while True:
+        clone = Morphology(neuron)
+        if rotation_params is not None:
+            rotational_jitter(clone, rotation_params)
+        if segment_scaling is not None or section_scaling is not None:
+            scale_morphology(clone, section_scaling, segment_scaling)
+        yield clone
