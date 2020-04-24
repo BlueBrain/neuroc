@@ -138,27 +138,44 @@ def _broadcast(scaling_factors, axis):
     return scaling_factors
 
 
-def _recursive_scale(section: Section,
-                     segment_scaling: ScaleParameters,
-                     section_scaling: ScaleParameters):
-    for child in section.children:
-        _recursive_scale(child, segment_scaling, section_scaling)
+def scale_section(section: Section,
+                  section_scaling: ScaleParameters = None,
+                  segment_scaling: ScaleParameters = None,
+                  recursive=False):
+    '''Scale the current section (and its descendents if recursive == True).
 
-    # 1) Apply scaling jitter segment by segment (each segment has a different scaling factor)
+    Args:
+        section: the section to scale
+        section_scaling: the parameters for the section-level scaling
+        segment_scaling: the parameters for the segment-level scaling
+        recursive: if True, also perform scaling on descendents
+    '''
+
+    if not any([section_scaling, segment_scaling]):
+        raise ValueError('section_scaling and segment_scaling cannot be None at the same time')
+
+    if recursive:
+        for child in section.children:
+            scale_section(child, section_scaling, segment_scaling, True)
+
     vectors = _segment_vectors(section, prepend_null_vector=True)
-    scaling_factors = normal_law(segment_scaling.mean, segment_scaling.std, size=len(vectors))
-    scaling_factors = _clip_minimum_scaling(scaling_factors)
-    scaling_factors = _broadcast(scaling_factors, segment_scaling.axis)
-    vectors = np.multiply(scaling_factors, vectors)
+    if segment_scaling:
+        # 1) Apply scaling jitter segment by segment (each segment has a different scaling factor)
+        scaling_factors = normal_law(segment_scaling.mean, segment_scaling.std, size=len(vectors))
+        scaling_factors = _clip_minimum_scaling(scaling_factors)
+        scaling_factors = _broadcast(scaling_factors, segment_scaling.axis)
+        vectors = np.multiply(scaling_factors, vectors)
+
     cumulative_vectors = np.cumsum(vectors, axis=0)
 
-    # 2) Apply scaling jitter at section level
-    section_scaling_factor = normal_law(section_scaling.mean, section_scaling.std)
-    section_scaling_factor = _clip_minimum_scaling(section_scaling_factor)
-    if section_scaling.axis is None:
-        cumulative_vectors *= section_scaling_factor
-    else:
-        cumulative_vectors[:, section_scaling.axis] *= section_scaling_factor
+    if section_scaling:
+        # 2) Apply scaling jitter at section level
+        section_scaling_factor = normal_law(section_scaling.mean, section_scaling.std)
+        section_scaling_factor = _clip_minimum_scaling(section_scaling_factor)
+        if section_scaling.axis is None:
+            cumulative_vectors *= section_scaling_factor
+        else:
+            cumulative_vectors[:, section_scaling.axis] *= section_scaling_factor
 
     new_points = section.points[0] + cumulative_vectors
     children_translation = new_points[-1] - section.points[-1]
@@ -170,8 +187,8 @@ def _recursive_scale(section: Section,
 
 
 def scale_morphology(neuron: Morphology,
-                     segment_scaling: ScaleParameters,
-                     section_scaling: ScaleParameters):
+                     section_scaling: ScaleParameters = None,
+                     segment_scaling: ScaleParameters = None):
     '''
     Scale a morphology.
 
@@ -189,7 +206,7 @@ def scale_morphology(neuron: Morphology,
         section_scaling (ScaleParameters): the section by section specific parameters
     '''
     for root in neuron.root_sections:
-        _recursive_scale(root, segment_scaling, section_scaling)
+        scale_section(root, section_scaling, segment_scaling, recursive=True)
 
 
 def iter_clones(filename: str, nclones: int,
@@ -215,5 +232,5 @@ def iter_clones(filename: str, nclones: int,
     for _ in range(nclones):
         neuron = Morphology(filename)
         rotational_jitter(neuron, rotation_params)
-        scale_morphology(neuron, segment_scaling, section_scaling)
+        scale_morphology(neuron, section_scaling, segment_scaling, )
         yield neuron

@@ -10,8 +10,8 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_equal)
 from nose.tools import ok_
 
-from neuroc.jitter import (rotational_jitter, RotationParameters, ScaleParameters,
-                           scale_morphology, iter_clones, _principal_direction, _segment_vectors)
+import neuroc.scale as tested
+from neuroc.scale import ScaleParameters, RotationParameters
 
 DATA_PATH = Path(Path(__file__).parent, 'data')
 
@@ -23,23 +23,23 @@ NEURON_PATH = path('Neuron.swc')
 
 def test_segment_vector():
     neuron = Morphology(SIMPLE_PATH)
-    assert_array_equal(_segment_vectors(neuron.section(0), prepend_null_vector=False),
+    assert_array_equal(tested._segment_vectors(neuron.section(0), prepend_null_vector=False),
                        [[0, 5, 0]])
 
-    assert_array_equal(_segment_vectors(neuron.section(0), prepend_null_vector=True),
+    assert_array_equal(tested._segment_vectors(neuron.section(0), prepend_null_vector=True),
                        [[0, 0, 0], [0, 5, 0]])
 
 def test_rotational_jitter():
     neuron = Morphology(NEURON_PATH)
-    rotational_jitter(neuron, RotationParameters(mean_angle=0, std_angle=0, numberpoint=5))
+    tested.rotational_jitter(neuron, RotationParameters(mean_angle=0, std_angle=0, numberpoint=5))
     ok_(not diff(NEURON_PATH, neuron))
 
     neuron = Morphology(NEURON_PATH)
-    rotational_jitter(neuron, RotationParameters(mean_angle=360, std_angle=0, numberpoint=5))
+    tested.rotational_jitter(neuron, RotationParameters(mean_angle=360, std_angle=0, numberpoint=5))
     ok_(not diff(NEURON_PATH, neuron))
 
     neuron = Morphology(SIMPLE_PATH)
-    rotational_jitter(neuron, RotationParameters(numberpoint=5, mean_angle=90., std_angle=0))
+    tested.rotational_jitter(neuron, RotationParameters(numberpoint=5, mean_angle=90., std_angle=0))
 
     # The parent section is oriented along Y so this is a rotation around Y
     # For reference, the original section is: [[ 0., 5., 0.], [-5., 5., 0.]]
@@ -48,13 +48,26 @@ def test_rotational_jitter():
 
 def test_no_scaling():
     neuron = Morphology(SIMPLE_PATH)
-    scale_morphology(neuron, ScaleParameters(), ScaleParameters())
+    tested.scale_morphology(neuron, ScaleParameters(), ScaleParameters())
     ok_(not diff(SIMPLE_PATH, neuron))
 
 def test_section_scaling():
     # Scale by 100%
     neuron = Morphology(SIMPLE_PATH)
-    scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=2))
+    section = neuron.section(0)
+    tested.scale_section(section, ScaleParameters(mean=2))
+
+    # section(0) scaled
+    assert_array_almost_equal(neuron.section(0).points,
+                              [[0, 0, 0], [0, 10, 0]])
+    # section(1) tranlated but not scaled
+    assert_array_almost_equal(neuron.section(1).points,
+                              [[0, 10, 0], [-5, 10, 0]])
+
+def test_morphology_scaling_section_param_only():
+    # Scale by 100%
+    neuron = Morphology(SIMPLE_PATH)
+    tested.scale_morphology(neuron, ScaleParameters(mean=2))
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0, 10, 0]])
     assert_array_almost_equal(neuron.section(1).points,
@@ -62,7 +75,7 @@ def test_section_scaling():
 
     # Scaling only on X axis
     neuron = Morphology(SIMPLE_PATH)
-    scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=2, axis=0))
+    tested.scale_morphology(neuron, ScaleParameters(mean=2, axis=0))
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0, 5, 0]])
     assert_array_almost_equal(neuron.section(1).points,
@@ -70,15 +83,15 @@ def test_section_scaling():
 
     # Attempt at scaling by -200% but minimum scaling factor is 1% of original length
     neuron = Morphology(SIMPLE_PATH)
-    scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=-2))
+    tested.scale_morphology(neuron, ScaleParameters(mean=-2))
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0, 0.05, 0]])
     assert_array_almost_equal(neuron.section(1).points,
                               [[0, 0.05, 0], [-0.05, 0.05, 0]])
 
-def test_segment_scaling():
+def test_morphology_scaling_segment_param_only():
     neuron = Morphology(SIMPLE_PATH)
-    scale_morphology(neuron, ScaleParameters(mean=2), ScaleParameters())
+    tested.scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=2))
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0, 10, 0]])
     assert_array_almost_equal(neuron.section(1).points,
@@ -86,7 +99,7 @@ def test_segment_scaling():
 
     neuron = Morphology(SIMPLE_PATH)
     np.random.seed(0)
-    scale_morphology(neuron, ScaleParameters(mean=2, std=0.5), ScaleParameters())
+    tested.scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=2, std=0.5))
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0., 9.621607, 0.]])
     assert_array_almost_equal(neuron.section(1).points,
@@ -94,7 +107,7 @@ def test_segment_scaling():
 
     # Scaling only on Y axis
     neuron = Morphology(SIMPLE_PATH)
-    scale_morphology(neuron, ScaleParameters(mean=2, axis=1), ScaleParameters())
+    tested.scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=2, axis=1))
     assert_array_almost_equal(neuron.section(0).points,
                               [[0, 0, 0], [0, 10, 0]])
     assert_array_almost_equal(neuron.section(1).points,
@@ -104,16 +117,16 @@ def test_segment_scaling():
 
 def test_principal_direction():
     neuron = Morphology(SIMPLE_PATH)
-    assert_array_almost_equal(_principal_direction(neuron.section(0)), [0.998492, -0.0549, 0.])
+    assert_array_almost_equal(tested._principal_direction(neuron.section(0)), [0.998492, -0.0549, 0.])
 
     neuron.section(1).points = [[0, 0, 0], [1, 1, 0], [-1, 1, 0]]
-    assert_array_equal(_principal_direction(neuron.section(1)), [1, 0, 0])
+    assert_array_equal(tested._principal_direction(neuron.section(1)), [1, 0, 0])
 
 def test_iter_clones():
-    for clone in iter_clones(NEURON_PATH, 1,
-                               RotationParameters(30, 0, 5),
-                               ScaleParameters(),
-                               ScaleParameters()):
+    for clone in tested.iter_clones(NEURON_PATH, 1,
+                                    RotationParameters(30, 0, 5),
+                                    ScaleParameters(),
+                                    ScaleParameters()):
 
         expected = ImmutMorphology(path('neuron_rotation_30_degree.swc'))
         ok_(not diff(clone, expected, atol=1e-3))

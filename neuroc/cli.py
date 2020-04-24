@@ -41,10 +41,9 @@ def file(input_file, output_file, scaling):
 
     Note: it does not scale the diameter
     '''
-    from neuroc.jitter import ScaleParameters, scale_morphology
+    from neuroc.scale import ScaleParameters, scale_morphology
     neuron = morphio.mut.Morphology(input_file)
     scale_morphology(neuron,
-                     segment_scaling=ScaleParameters(),
                      section_scaling=ScaleParameters(mean=scaling))
     neuron.write(output_file)
 
@@ -60,11 +59,10 @@ def folder(input_dir, output_dir, scaling):
 
     Note: it does not scale the diameter
     '''
-    from neuroc.jitter import ScaleParameters, scale_morphology
+    from neuroc.scale import ScaleParameters, scale_morphology
     for path in iter_morphology_files(input_dir):
         neuron = morphio.mut.Morphology(path)
         scale_morphology(neuron,
-                         segment_scaling=ScaleParameters(),
                          section_scaling=ScaleParameters(mean=scaling))
         neuron.write(str(Path(output_dir, Path(path).name)))
 
