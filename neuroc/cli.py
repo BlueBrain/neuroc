@@ -10,9 +10,6 @@ from neuroc.axon_shrinker.shrink import run
 from neuroc.axon_shrinker.viewer import app, set_output_folder, set_input_folder
 
 
-REQUIRED_DIR = click.Path(exists=True, readable=True, dir_okay=True, resolve_path=True)
-
-
 @click.group()
 def cli():
     '''The CLI object'''
@@ -29,6 +26,7 @@ def simple():
 
     Note: it does not scale the diameter
     '''
+
 
 # pylint: disable=function-redefined
 @simple.command(short_help='Scale one morphology')
@@ -103,23 +101,21 @@ def axon_shrinker(files_folder, annotations_folder, output_folder, nsamples, hei
 
 # pylint: disable=function-redefined
 @scale.command(short_help='Scale rat cell to human cell dimensions')
-@click.argument('human_dir', type=REQUIRED_DIR)
-@click.argument('rat_dir', type=REQUIRED_DIR)
+@click.argument('human_neurondb', type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.argument('rat_neurondb', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('mtype_mapping', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('output_dir', type=click.Path(exists=True, file_okay=False, writable=True))
-def rat_to_human(human_dir, rat_dir, mtype_mapping, output_dir):
+def rat_to_human(human_neurondb, rat_neurondb, mtype_mapping, output_dir):
     '''Scale rat cells to human cells diamensions
 
-    HUMAN_DIR should be a dir with the following structure:
-        - Must be **only** composed of sub-folders whose filename is a layer name
-        - Each sub folder should be composed of morphology files whose first part of the filename
-      before the '_' is considered as the **mtype**
-
-    RAT_DIR should be a directory containing rat morphology files **and a neuronDB.xml file.
-
-    MTYPE_MAPPING_FILE is a YAML file containing a dictionary where:
-       - a key is a human mtype or **all**
-       - the value is a list of rat mtypes to associate with the key. Or a list of one 'all' element
+    Args:
+        HUMAN_NEURONDB: the human neurondb filename
+        RAT_NEURONDB: the rat neurondb filename
+        MTYPE_MAPPING: the YAML mapping HUMAN mtype to RAT mtypes
+            It must be a dictionary
+                key: human mtype
+                value: list of corresponding rat mtypes
+        OUTPUT_FOLDER: the output folder
 
     \b
     Algorithm:
@@ -139,7 +135,7 @@ def rat_to_human(human_dir, rat_dir, mtype_mapping, output_dir):
     https://bbpteam.epfl.ch/project/issues/browse/IHNM-6
     '''
     from neuroc.rat_to_human import scale_all_cells
-    scale_all_cells(Path(human_dir),
-                    Path(rat_dir),
+    scale_all_cells(Path(human_neurondb),
+                    Path(rat_neurondb),
                     Path(mtype_mapping),
                     Path(output_dir))

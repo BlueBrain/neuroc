@@ -4,14 +4,14 @@ from __future__ import print_function
 import logging
 import os
 from itertools import chain
+from pathlib import Path
 from time import time
-from pathlib2 import Path
 
 import dash
-from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
+from dash.dependencies import Input, Output, State
 from neurom import COLS, NeuriteType, iter_neurites, iter_segments, load_neuron
 
 from neuroc.axon_shrinker.shrink import cut_and_graft, cut_axon_end

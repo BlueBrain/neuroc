@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 from click.testing import CliRunner
 from nose.tools import assert_equal
 
-from neuroc.cli import cli
+from neuroc.cli import scale
 
 DATA = Path(__file__).resolve().parent / 'data'
 
@@ -34,7 +34,7 @@ def test_cli():
 
     with TemporaryDirectory(prefix='test-scale-file') as folder:
         folder = Path(folder)
-        result = runner.invoke(cli, ['scale', 'simple', 'file',
+        result = runner.invoke(scale, ['simple', 'file',
                                      '--scaling', '2.0',
                                      str(DATA / 'simple.asc'),
                                      str(folder / 'simple-scaled.asc')])
@@ -45,7 +45,7 @@ def test_cli():
         folder = Path(folder)
         input_folder, output_folder = _prepare_folders(folder)
 
-        result = runner.invoke(cli, ['scale', 'simple', 'folder',
+        result = runner.invoke(scale, ['simple', 'folder',
                                      '--scaling', '2.0',
                                      str(input_folder),
                                      str(output_folder)])
@@ -58,10 +58,10 @@ def test_rat_to_human():
 
     with TemporaryDirectory(prefix='test-scale-file') as folder:
         folder = Path(folder)
-        result = runner.invoke(cli, ['scale', 'rat-to-human',
-                                     str(DATA / 'human-cells/Inhibitory'),
-                                     str(DATA / 'rat-cells'),
-                                     str(DATA / 'inh-mapping.yaml'),
+        result = runner.invoke(scale, ['rat-to-human',
+                                     str(DATA / 'human-cells' / 'neurondb.dat'),
+                                     str(DATA / 'rat-cells' / 'neurondb.dat'),
+                                     str(DATA / 'mapping.yaml'),
                                      str(folder)])
-        assert_equal(result.exit_code, 0, result.exception)
-        assert_equal(len(list(folder.glob('*'))), 3)
+        assert_equal(result.exit_code, 0, result.exc_info)
+        assert_equal(len(list(folder.glob('*'))), 5)

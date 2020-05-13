@@ -25,10 +25,9 @@ setup(
                       'numpy>=1.15.1',
                       'tqdm>=4.23.4',
                       'click>=6.7',
-                      'pathlib2>=2.3.3',
+                      'pandas>=1.0.3',
                       'morphio>=2.0.6',
                       'morph-tool>=0.1.12',
-                      'morphology-repair-workflow>=1.0.2',
                       'neurom[plotly]>=1.4.10',
                       'dash>=1.1.1',  # The core dash backend
                       'dash-html-components>=1.0.0',  # HTML components

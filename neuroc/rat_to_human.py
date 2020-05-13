@@ -18,38 +18,29 @@ Scale rat cells to human cells diamensions
 '''
 
 import logging
-import os
-import warnings
-from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Iterable, List, Dict, Tuple
+from typing import Callable, Iterable, List, Tuple
 
 import numpy as np
 import pandas as pd
 import yaml
-from morph_tool.utils import iter_morphology_files
-from morphology_repair_workflow.morphdb import MorphologyDB, MTYPE_MSUBTYPE_SEPARATOR
+from morphio.mut import Morphology
 from neurom import COLS, NeuriteType, iter_neurites, load_neuron
 from neurom.core._neuron import Neuron
 from tqdm import tqdm
 
-from morphio.mut import Morphology
-
 L = logging.getLogger('neuroc')
 
 
-def validate_folders(human_folder: Path, rat_folder: Path):
-    '''Raises if HUMAN_FOLDER or RAT_FOLDER don't have the expected content.'''
-    for path in human_folder.iterdir():
-        if path.name.upper() not in {'L1', 'L2', 'L3', 'L4', 'L5', 'L6'}:
-            raise ValueError('The content of the human folder: {} should only be sub-folders '
-                             'with a layer name\n'
-                             '(aka L1, L2, L3, etc.)\nFound: {}'.format(human_folder,
-                                                                        path.name))
+def neurondb_dataframe(filename: Path) -> pd.DataFrame:
+    '''Returns a DataFrame: [name, layer, mtype]
 
-    neurondb = rat_folder / 'neuronDB.xml'
-    if not neurondb.exists():
-        raise ValueError('neuronDB.xml not found in the rat folder: {}'.format(rat_folder))
+    Args:
+        filename: the neurondb.dat file
+    '''
+    df = pd.read_csv(filename, sep=' ', names=['name', 'layer', 'mtype'], index_col=False)
+    df.layer = df.layer.astype('str')
+    return df
 
 
 def _find_filepath(input_path: Path, stem: str):
@@ -57,42 +48,8 @@ def _find_filepath(input_path: Path, stem: str):
     for extension in ['.asc', '.swc', '.h5', '.ASC', '.SWC', '.H5']:
         path = Path(input_path, stem + extension)
         if path.exists():
-            return path
-    return None
-
-
-def morphology_filenames(folder: Path):
-    '''Returns a dictionary of (mtype, morphology filenames)
-
-    from all morphologies found in the folder neuronDB.xml file
-    '''
-    folder = Path(folder)
-    db = MorphologyDB.load_neurondb_xml(folder / 'neuronDB.xml')
-    mtypes = defaultdict(list)
-    for morphology in iter(db):
-        path = _find_filepath(folder, morphology.name)
-        if path:
-            sub_mtype_removed = morphology.mtype.split(MTYPE_MSUBTYPE_SEPARATOR)[0]
-            mtypes[sub_mtype_removed].append(path)
-
-    return dict(mtypes)
-
-
-def morphologies_in_layer(folder: Path, layer: str):
-    '''Returns a list of all morphologies in the corresponding layer
-
-    from all morphologies found in the folder neuronDB.xml file
-    '''
-    filename = 'neuronDB.xml'
-    db = MorphologyDB.load_neurondb_xml(os.path.join(folder, filename))
-
-    paths = list()
-    for morphology in iter(db):
-        path = _find_filepath(folder, morphology.name)
-        if path and morphology.layer.lower() == layer[1:].lower():
-            paths.append(path)
-
-    return paths
+            return path.resolve()
+    raise ValueError(f'{stem} not found in {input_path}')
 
 
 def not_axon(neurite):
@@ -116,7 +73,7 @@ def dendritic_diameter(neuron: Neuron):
 
 def scaling_factors(human_paths: Iterable[str],
                     rat_paths: Iterable[str],
-                    funcs: List[Callable[[Neuron], float]]):
+                    funcs: Iterable[Callable[[Neuron], float]]):
     '''Returns the list of scaling factors
 
     Args:
@@ -145,124 +102,67 @@ def dendritice_radial_std(neuron: Neuron):
     return radial_coord.std()
 
 
-def human_cells_per_layer_mtype(folder: Path):
-    '''returns a Dict[mtype, path] of all the human cells
-
-    FOLDER should be composed of sub-folders with the name of the layer.
-    Mtype is taken from the first part of the cell filename
-
-    Example:
-    - folder/L1/DAC_neuron-bla-bla.swc
-    - folder/L2/AC_some-neuron.h5
-    - folder/L3/BTF_another-neuron.ASC
-    '''
-    cells = dict()
-    for layer_folder in folder.iterdir():
-        layer = layer_folder.stem
-        cells[layer] = defaultdict(list)
-        for cell in iter_morphology_files(layer_folder):
-            mtype = cell.stem.split('_')[0]
-            cells[layer][mtype].append(cell)
-    return cells
+def extended_neurondb(morphology_neurondb: Path) -> pd.DataFrame:
+    '''Returns a DataFrame [layer, mtype, name, path]'''
+    df = neurondb_dataframe(morphology_neurondb)
+    folder = morphology_neurondb.parent.joinpath('h5')
+    df['path'] = [_find_filepath(folder, name) for name in df.name]
+    return df
 
 
-def mtype_name(layer: str, mtype: str):
-    '''Returns the standardized name of the mtype for a given layer.'''
-    L23_mtypes = {'LBC', 'BP', 'BTC', 'CHC', 'DBC', 'LBC', 'MC', 'NBC', 'NGC', 'SBC'}
-    if layer.upper() in {'L2', 'L3'} and mtype in L23_mtypes:
-        return 'L23_' + mtype
-    return layer + '_' + mtype
-
-
-def mtype_matcher(human_folder: Path,
-                  rat_folder: Path,
-                  mtype_mapping: Path) -> Dict[Tuple[str, str], Tuple[Path, Path]]:
+def mtype_matcher(human_neurondb: Path,
+                  rat_neurondb: Path,
+                  mtype_mapping: Path) -> Tuple[pd.DataFrame, pd.DataFrame]:
     '''Group human and rat cells by equivalence of mtype.
 
     Human and rat cells have different mtypes but can be grouped together by using
     a mtype mapping.
 
-    Returns a dictionary that maps (layer, human mtype) to a tuple of (human cells, rat cells)
+    Yields 2-tuples of dataframes of (human cells, rat cells)
     whose mtypes can be considered as equivalent.
     '''
-    zipped = dict()
-
     with mtype_mapping.open() as file_:
         mtype_mapping = yaml.load(file_, Loader=yaml.FullLoader)
 
-    rat_morphologies = morphology_filenames(rat_folder)
-    human_cells_dict = human_cells_per_layer_mtype(human_folder)
+    df_rat = extended_neurondb(rat_neurondb)
+    df_human = extended_neurondb(human_neurondb)
 
-    missing_mappings = list()
-    for layer in mtype_mapping:
-        for human_mtype, rat_mtypes in mtype_mapping[layer].items():
-            rat_cells = list()
-
-            if human_mtype.lower() == 'all':
-                raise ValueError('human mtype "all" in YAML mapping file is no longer supported\n'
-                                 'Please use only real mtypes to define the mapping')
-            human_cells = human_cells_dict[layer][human_mtype]
-
-            if len(rat_mtypes) == 1 and rat_mtypes[0].lower() == 'all':
-                zipped[(layer, human_mtype)] = (
-                    human_cells, morphologies_in_layer(rat_folder, layer))
-                continue
-
-            for mtype in rat_mtypes:
-                if mtype.lower() == 'all':
-                    raise ValueError('The human -> rat mtype mapping is: {} -> {}\n'
-                                     'If you specify "all", it should be the only element'
-                                     ' of the mapping'.format(human_mtype, rat_mtypes))
-
-                mtype_name_ = mtype_name(layer, mtype)
-                if mtype_name_ not in rat_morphologies:
-                    missing_mappings.append((layer, human_mtype, mtype_name_))
-                    continue
-                rat_cells.extend(rat_morphologies[mtype_name_])
-
-            if human_cells or rat_cells:
-                zipped[(layer, human_mtype)] = (human_cells, rat_cells)
-    if missing_mappings:
-        warnings.warn(
-            'The following HUMAN -> RAT mappings did not return any rat cells:\n{}'.format(
-                '\n'.join('{layer}: {human} -> {rat}'.format(layer=layer, human=human, rat=rat)
-                          for (layer, human, rat) in missing_mappings)))
-
-    return zipped
+    for human_mtype, rat_mtypes in mtype_mapping.items():
+        rats = df_rat[df_rat.mtype.isin(rat_mtypes)]
+        assert not rats.empty, (f'The following {human_mtype} (human) -> {rat_mtypes} (rat)'
+                                ' did not return any rat cells')
+        humans = df_human[df_human.mtype == human_mtype]
+        assert not humans.empty, (f'No morphology found for human mtype: {human_mtype}')
+        yield humans, rats
 
 
 def iter_scaling_and_rat(
-    human_folder: Path,
-    rat_folder: Path,
+    human_neurondb: Path,
+    rat_neurondb: Path,
     mtype_mapping_file: Path,
-    funcs: List[Callable[[Neuron], float]]
-) -> Tuple[str, str, Path, List[float]]:
-    '''Yields a tuple (human layer, human mtype, rat, scaling factors)
+    funcs: Iterable[Callable[[Neuron], float]]
+) -> Tuple[str, str, str, Path, List[float]]:
+    '''Yields a tuple (human layer, rat mtype, rat layer, rat path, scaling factors)
 
     Args:
-        human_folder: path to human folder
-        rat_folder: path to rat folder
+        human_neurondb: path to human neurondb
+        rat_neurondb: path to rat neurondb
         mtype_mapping_file: path to YAML file containing the mtype mapping
         funcs: list of functions returning a neuron feature. The average of the
             feature among groups (human/rat) of mapped cells will be used to compute
             the scaling factor
     '''
-    matches = mtype_matcher(human_folder, rat_folder, mtype_mapping_file)
-    for (human_layer, human_mtype), (humans, rats) in tqdm(matches.items(), total=len(matches)):
-        if not humans:
-            continue
-        if not rats:
-            warnings.warn('No matching rat morphologies for the following human mtypes. '
-                          'Scaling will be skipped for:\n{}'.format('\n'.join(map(str, humans))))
-            continue
+    sequence = list(mtype_matcher(human_neurondb, rat_neurondb, mtype_mapping_file))
+    for df_human, df_rat in tqdm(sequence):
+        factors = scaling_factors(df_human.path, df_rat.path, funcs)
 
-        factors = scaling_factors(humans, rats, funcs)
-        for rat in rats:
-            yield human_layer, human_mtype, rat, factors
+        human_mtype = df_human.mtype.iloc[0]
+        for rat_mtype, rat_layer, rat_path in zip(df_rat.mtype, df_rat.layer, df_rat.path):
+            yield human_mtype, rat_mtype, rat_layer, rat_path, factors
 
 
 def scale_diameter(neuron: Morphology,
-                   scaling_factor: float):
+                   scaling_factor: float) -> None:
     '''In-place scaling of a neuron diameters by a constant scaling factor.
 
     Args:
@@ -291,7 +191,7 @@ def scale_one_cell(path: Path, y_scale: float, xz_scale: float, diam_scale: floa
     '''Scale the coordinates and diameters of a cell.
 
     Args:
-        filename: a neuron path
+        path: a neuron path
         y_scale: Y scaling factor
         xz_scale: XZ scaling factor
         diam_scale: diameter scaling factor
@@ -306,23 +206,20 @@ def scale_one_cell(path: Path, y_scale: float, xz_scale: float, diam_scale: floa
     return neuron
 
 
-def scale_all_cells(human_folder: Path,
-                    rat_folder: Path,
+def scale_all_cells(human_neurondb: Path,
+                    rat_neurondb: Path,
                     mtype_mapping_file: Path,
-                    output_folder: Path):
+                    output_folder: Path) -> None:
     '''Scale rat cells to human cells diamensions
 
-    HUMAN_DIR should be a dir with the following structure:
-        - Must be **only** composed of sub-folders whose filename is a layer name
-        - Each sub folder should be composed of morphology files whose first part of the filename
-      before the '_' is considered as the **mtype**
-
-    RAT_DIR should be a directory containing rat morphology files **and a neuronDB.xml file.
-
-    MTYPE_MAPPING_FILE is a YAML file containing a dictionary where:
-       - a key is a human mtype or **all**
-       - the value is a list of rat mtypes to associate with the key. Or a list of one 'all' element
-
+    Args:
+        human_neurondb: the human neurondb filename
+        rat_neurondb: the rat neurondb filename
+        mtype_mapping_file: the YAML mapping HUMAN mtype to RAT mtypes
+            It must be a dictionary
+                key: human mtype
+                value: list of corresponding rat mtypes
+        output_folder: the output folder
 
     Algorithm:
     1) Human and rat mtypes are grouped together according to the mapping
@@ -340,22 +237,26 @@ def scale_all_cells(human_folder: Path,
     See issue:
     https://bbpteam.epfl.ch/project/issues/browse/IHNM-6
     '''
-    validate_folders(human_folder, rat_folder)
     scaling_functions = (dendritic_y_std, dendritice_radial_std, dendritic_diameter)
 
     L.info('Grouping human and rat cells by equivalent mtypes. This may take a while...')
-    iterable = list(iter_scaling_and_rat(human_folder,
-                                         rat_folder,
+    iterable = list(iter_scaling_and_rat(human_neurondb,
+                                         rat_neurondb,
                                          mtype_mapping_file,
                                          scaling_functions))
 
     L.info('Scaling rat cells. This may take a while...')
 
     metadata = list()
-    for human_layer, human_mtype, rat, (y_scale, xz_scale, diam_scale) in tqdm(iterable):
-        name = f'{rat.stem}_-_Y-Scale_{y_scale}_-_XZ-Scale_{xz_scale}_-_Diam-Scale_{diam_scale}.h5'
-        scale_one_cell(rat, y_scale, xz_scale, diam_scale).write(output_folder / name)
-        metadata.append([Path(name).stem, human_layer, human_mtype])
 
-    pd.DataFrame(data=metadata, columns=['name', 'layer', 'mtype']).to_csv(
-        output_folder / 'neurondb.dat', index=False, header=False, sep=' ')
+    for human_mtype, rat_mtype, rat_layer, rat_path, (y_scale, xz_scale, diam_scale) in tqdm(
+            iterable):
+        name = (f'{rat_path.stem}_-_Y-Scale_{y_scale}_-_XZ-Scale_{xz_scale}_-_Diam-'
+                f'Scale_{diam_scale}.h5')
+        scale_one_cell(rat_path, y_scale, xz_scale, diam_scale).write(output_folder / name)
+        metadata.append([Path(name).stem, human_mtype, rat_mtype, rat_layer, rat_path.stem])
+
+    pd.DataFrame(
+        data=metadata,
+        columns=['human_name', 'human_mtype', 'rat_mtype', 'rat_layer', 'original_rat']
+    ).to_csv(output_folder / 'neurondb.csv', index=False)

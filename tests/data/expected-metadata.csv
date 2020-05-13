@@ -1,0 +1,5 @@
+human_name,human_mtype,rat_mtype,rat_layer,original_rat
+neuron1_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0,L1_AC,L1_DAC,L1,neuron1
+neuron2_-_Y-Scale_2.0_-_XZ-Scale_2.0000000000000004_-_Diam-Scale_3.0,L5_PSC,L5_PC,L5,neuron2
+neuron3_-_Y-Scale_2.0_-_XZ-Scale_2.0000000000000004_-_Diam-Scale_3.0,L5_PSC,L5_PC,L5,neuron3
+neuron4_-_Y-Scale_2.0_-_XZ-Scale_2.0000000000000004_-_Diam-Scale_3.0,L5_PSC,L5_HAC,L5,neuron4
