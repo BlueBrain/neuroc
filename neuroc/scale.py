@@ -54,7 +54,13 @@ def _principal_direction(section: Section):
     # point
     points = np.vstack([descendant_section.points[1:] - p0
                         for descendant_section in section.iter()])
-    directions_normed = (points.T / np.linalg.norm(points, axis=1)).T
+    norms = np.linalg.norm(points, axis=1)
+
+    # To remove Null vectors caused by duplicate points
+    mask = norms > 0
+
+    directions_normed = (points[mask].T / norms[mask]).T
+
     pca = PCA(n_components=1)
     pca.fit(directions_normed)
     return pca.components_[0]

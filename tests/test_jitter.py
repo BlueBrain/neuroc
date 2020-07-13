@@ -127,6 +127,10 @@ def test_principal_direction():
     neuron.section(1).points = [[0, 0, 0], [1, 1, 0], [-1, 1, 0]]
     assert_array_equal(tested._principal_direction(neuron.section(1)), [1, 0, 0])
 
+    neuron = Morphology(path('simple-with-duplicate.asc'))
+    assert_array_almost_equal(tested._principal_direction(neuron.section(1)),
+                              [0.098538, 0.995133, 0.      ])
+
 
 def test_iter_clones():
     clone = next(tested.yield_clones(NEURON_PATH, RotationParameters(30, 0, 5)))
