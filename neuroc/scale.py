@@ -203,7 +203,7 @@ def scale_morphology(neuron: Morphology,
     The segment scaling scales each segment of the morphology with a
     different realization of the normal law.
 
-    The sectoin scaling scales all the segments of the same section with
+    The section scaling scales all the segments of the same section with
     the same realization of the normal law.
 
     Args:

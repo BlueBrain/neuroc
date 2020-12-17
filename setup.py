@@ -28,13 +28,18 @@ setup(
                       'pandas>=1.0.3',
                       'morphio>=2.0.6',
                       'morph-tool>=0.1.12',
-                      'neurom[plotly]>=1.4.10',
-                      'dash>=1.1.1',  # The core dash backend
-                      'dash-html-components>=1.0.0',  # HTML components
-                      'dash-core-components>=1.1.1',  # Supercharged components
-                      'dash-table>=4.1.0',  # Interactive DataTable component (new!)
+                      'neurom>=1.4.10',
                       'scikit-learn>=0.21.3',
     ],
+    extras_require={
+        'plotly': [
+            'neurom[plotly]>=1.4.10',
+            'dash>=1.1.1',  # The core dash backend
+            'dash-html-components>=1.0.0',  # HTML components
+            'dash-core-components>=1.1.1',  # Supercharged components
+            'dash-table>=4.1.0',  # Interactive DataTable component (new!)
+        ]
+    },
     packages=find_packages(),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

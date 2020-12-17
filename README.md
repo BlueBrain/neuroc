@@ -18,9 +18,7 @@ Rotational jitter rotates each section around its parent axis or around the PCA 
 
 In a fresh virtualenv:
 ```bash
-git clone  --index-url  https://bbpteam.epfl.ch/repository/devpi/bbprelman/dev/+simple/ ssh://bbpcode.epfl.ch/nse/NeuroC
-cd NeuroC
-pip install .
+pip install  --index-url  https://bbpteam.epfl.ch/repository/devpi/bbprelman/dev/+simple/ neuroc[plotly]
 ```
 
 # Usage
