@@ -98,7 +98,7 @@ def _recursive_rotational_jitter(section: Section, piecenumber: int,
 
     direction /= np.linalg.norm(direction)
     theta = np.random.normal(angle_mean, angle_std) * np.pi / 180.
-    matrix = Rotation.from_rotvec(theta * direction).as_dcm()
+    matrix = Rotation.from_rotvec(theta * direction).as_matrix()
     rotate(section, matrix, origin=section.points[0])
 
 
