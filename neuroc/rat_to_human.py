@@ -26,7 +26,7 @@ import pandas as pd
 import yaml
 from morphio.mut import Morphology
 from neurom import COLS, NeuriteType, iter_neurites, load_neuron
-from neurom.core._neuron import Neuron
+from neurom.core import Neuron
 from tqdm import tqdm
 
 L = logging.getLogger('neuroc')

@@ -47,6 +47,22 @@ def test_rotational_jitter():
     # For reference, the original section is: [[ 0., 5., 0.], [-5., 5., 0.]]
     assert_array_almost_equal(neuron.section(1).points, [[0, 5, 0], [0, 5, 5]])
 
+    np.random.seed(0)
+    neuron = Morphology(SIMPLE_PATH)
+    tested.rotational_jitter(neuron, RotationParameters(numberpoint=5, mean_angle=90., std_angle=0.1))
+    assert_array_almost_equal(neuron.section(1).points, [[0, 5, 0], [0.015394, 5, 4.999976]])
+
+    rng = np.random.default_rng(0)
+    neuron = Morphology(SIMPLE_PATH)
+    tested.rotational_jitter(
+        neuron,
+        RotationParameters(numberpoint=5, mean_angle=90., std_angle=0.1),
+        rng=rng,
+    )
+    # Note: the random numbers generated after np.random.seed(0) and np.random.default_rng(0)
+    # are different so it is expected that the arrays are slightly different.
+    assert_array_almost_equal(neuron.section(1).points, [[0, 5, 0], [0.016297, 5, 4.999973]])
+
 
 def test_no_scaling():
     neuron = Morphology(SIMPLE_PATH)
@@ -109,6 +125,14 @@ def test_morphology_scaling_segment_param_only():
                               [[0, 0, 0], [0., 9.621607, 0.]])
     assert_array_almost_equal(neuron.section(1).points,
                               [[0., 9.621607, 0.], [-11.000393, 9.621607, 0.]])
+
+    neuron = Morphology(SIMPLE_PATH)
+    rng = np.random.default_rng(0)
+    tested.scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=2, std=0.5), rng=rng)
+    assert_array_almost_equal(neuron.section(0).points,
+                              [[0, 0, 0], [0., 9.669738, 0.]])
+    assert_array_almost_equal(neuron.section(1).points,
+                              [[0., 9.669738, 0.], [-7.864761, 9.669738, 0.]])
 
     # Scaling only on Y axis
     neuron = Morphology(SIMPLE_PATH)

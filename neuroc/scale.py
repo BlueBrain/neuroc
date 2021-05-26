@@ -2,7 +2,6 @@
 
 import attr
 import numpy as np
-from numpy.random import normal as normal_law
 from sklearn.decomposition import PCA
 from scipy.spatial.transform import Rotation
 
@@ -67,7 +66,8 @@ def _principal_direction(section: Section):
 
 
 def _recursive_rotational_jitter(section: Section, piecenumber: int,
-                                 angle_mean: float, angle_std: float):
+                                 angle_mean: float, angle_std: float,
+                                 rng=np.random):
     '''Rotate a section and its descendent sections
 
     Many rotations are applied. Each time, the rotation is applied to the section and its
@@ -81,8 +81,9 @@ def _recursive_rotational_jitter(section: Section, piecenumber: int,
         section (morphio.mut.Section): the section to rotate (descendents are rotated as well)
         piecenumber (int): the number of points of the parent section to consider when making a
             rotation around the parent section
-        angle_params (Dict[str, float]): the mean and std of the normal law used to sample the
-            rotation angle
+        angle_mean (float): the mean of the normal law used to sample the rotation angle
+        angle_std (float): the std of the normal law used to sample the rotation angle
+        rng: a random number generator (numpy.random is used by default)
     '''
     for child in section.children:
         _recursive_rotational_jitter(child, piecenumber, angle_mean, angle_std)
@@ -97,20 +98,23 @@ def _recursive_rotational_jitter(section: Section, piecenumber: int,
         direction = _principal_direction(section)
 
     direction /= np.linalg.norm(direction)
-    theta = np.random.normal(angle_mean, angle_std) * np.pi / 180.
+    theta = rng.normal(angle_mean, angle_std) * np.pi / 180.
     matrix = Rotation.from_rotvec(theta * direction).as_matrix()
     rotate(section, matrix, origin=section.points[0])
 
 
-def rotational_jitter(neuron: Morphology, params: RotationParameters):
+def rotational_jitter(neuron: Morphology, params: RotationParameters, rng=np.random):
     '''Jitter sections by rotating them
 
     Args:
         neuron (morphio.mut.Morphology): the neuron
         params (Parameters): the parameters
+        rng: a random number generator (numpy.random is used by default)
     '''
     for root in neuron.root_sections:
-        _recursive_rotational_jitter(root, params.numberpoint, params.mean_angle, params.std_angle)
+        _recursive_rotational_jitter(
+            root, params.numberpoint, params.mean_angle, params.std_angle, rng
+        )
 
 
 def _segment_vectors(section: Section, prepend_null_vector: bool = False):
@@ -147,7 +151,8 @@ def _broadcast(scaling_factors, axis):
 def scale_section(section: Section,
                   section_scaling: ScaleParameters = None,
                   segment_scaling: ScaleParameters = None,
-                  recursive=False) -> None:
+                  recursive=False,
+                  rng=np.random) -> None:
     '''Scale the current section (and its descendents if recursive == True).
 
     Args:
@@ -155,6 +160,7 @@ def scale_section(section: Section,
         section_scaling: the parameters for the section-level scaling
         segment_scaling: the parameters for the segment-level scaling
         recursive: if True, also perform scaling on descendents
+        rng: a random number generator (numpy.random is used by default)
     '''
 
     if not any([section_scaling, segment_scaling]):
@@ -167,7 +173,7 @@ def scale_section(section: Section,
     vectors = _segment_vectors(section, prepend_null_vector=True)
     if segment_scaling:
         # 1) Apply scaling jitter segment by segment (each segment has a different scaling factor)
-        scaling_factors = normal_law(segment_scaling.mean, segment_scaling.std, size=len(vectors))
+        scaling_factors = rng.normal(segment_scaling.mean, segment_scaling.std, size=len(vectors))
         scaling_factors = _clip_minimum_scaling(scaling_factors)
         scaling_factors = _broadcast(scaling_factors, segment_scaling.axis)
         vectors = np.multiply(scaling_factors, vectors)
@@ -176,7 +182,7 @@ def scale_section(section: Section,
 
     if section_scaling:
         # 2) Apply scaling jitter at section level
-        section_scaling_factor = normal_law(section_scaling.mean, section_scaling.std)
+        section_scaling_factor = rng.normal(section_scaling.mean, section_scaling.std)
         section_scaling_factor = _clip_minimum_scaling(section_scaling_factor)
         if section_scaling.axis is None:
             cumulative_vectors *= section_scaling_factor
@@ -194,7 +200,8 @@ def scale_section(section: Section,
 
 def scale_morphology(neuron: Morphology,
                      section_scaling: ScaleParameters = None,
-                     segment_scaling: ScaleParameters = None) -> None:
+                     segment_scaling: ScaleParameters = None,
+                     rng=np.random) -> None:
     '''
     Scale a morphology.
 
@@ -210,9 +217,10 @@ def scale_morphology(neuron: Morphology,
         neuron: the morphology to scale
         section_scaling: the section by section specific parameters
         segment_scaling: the segment by segment specific parameters
+        rng: a random number generator (numpy.random is used by default)
     '''
     for root in neuron.root_sections:
-        scale_section(root, section_scaling, segment_scaling, recursive=True)
+        scale_section(root, section_scaling, segment_scaling, True, rng)
 
 
 def yield_clones(filename: str,

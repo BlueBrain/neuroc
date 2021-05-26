@@ -2,6 +2,11 @@ ChangeLog
 =========
 
 
+0.2.6
+-----
+
+- Allow to pass numpy rangom generators to jitter functions
+
 0.1.6
 -----
 

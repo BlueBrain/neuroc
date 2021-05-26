@@ -28,7 +28,7 @@ setup(
                       'pandas>=1.0.3',
                       'morphio>=2.0.6',
                       'morph-tool>=0.1.12',
-                      'neurom>=1.4.10',
+                      'neurom>=2,<3',
                       'scikit-learn>=0.21.3',
     ],
     extras_require={

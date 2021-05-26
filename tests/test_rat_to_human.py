@@ -32,11 +32,11 @@ def test_extensions():
     assert_almost_equal(tested.dendritic_diameter(load_neuron(RAT_PATH / 'neuron1.swc')), 2.5)
 
     assert_almost_equal(tested.dendritic_y_std(load_neuron(DATA / 'Neuron.swc')),
-                        28.280295211604614)
+                        28.28029441833496)
     assert_almost_equal(tested.dendritice_radial_std(load_neuron(DATA / 'Neuron.swc')),
-                        22.01310793432494)
+                        22.013107299804688)
     assert_almost_equal(tested.dendritic_diameter(load_neuron(DATA / 'Neuron.swc')),
-                        1.2016682319539242)
+                        1.2016682624816895)
 
 
 def test_scaling_factors():
@@ -121,12 +121,12 @@ def test_scale_all_cells():
         assert_equal(set(output_folder.rglob('*')),
                      {
                          Path(
-                             output_folder, 'neuron3_-_Y-Scale_2.0_-_XZ-Scale_2.0000000000000004_-_Diam-Scale_3.0.h5'),
+                             output_folder, 'neuron3_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5'),
                          Path(
-                             output_folder, 'neuron2_-_Y-Scale_2.0_-_XZ-Scale_2.0000000000000004_-_Diam-Scale_3.0.h5'),
+                             output_folder, 'neuron2_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5'),
                          Path(output_folder, 'neurondb.csv'),
                          Path(
-                             output_folder, 'neuron4_-_Y-Scale_2.0_-_XZ-Scale_2.0000000000000004_-_Diam-Scale_3.0.h5'),
+                             output_folder, 'neuron4_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5'),
                          Path(output_folder, 'neuron1_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.h5')
         })
 
