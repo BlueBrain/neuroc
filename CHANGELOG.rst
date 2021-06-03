@@ -2,6 +2,12 @@ ChangeLog
 =========
 
 
+0.2.7
+-----
+
+- Fix the recursive pass of `rng` in `scale_section`
+
+
 0.2.6
 -----
 

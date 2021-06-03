@@ -130,9 +130,9 @@ def test_morphology_scaling_segment_param_only():
     rng = np.random.default_rng(0)
     tested.scale_morphology(neuron, ScaleParameters(), ScaleParameters(mean=2, std=0.5), rng=rng)
     assert_array_almost_equal(neuron.section(0).points,
-                              [[0, 0, 0], [0., 9.669738, 0.]])
+                              [[0, 0, 0], [0., 12.367702, 0.]])
     assert_array_almost_equal(neuron.section(1).points,
-                              [[0., 9.669738, 0.], [-7.864761, 9.669738, 0.]])
+                              [[0., 12.367702, 0.], [-9.669738, 12.367702, 0.]])
 
     # Scaling only on Y axis
     neuron = Morphology(SIMPLE_PATH)

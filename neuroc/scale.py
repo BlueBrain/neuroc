@@ -168,7 +168,7 @@ def scale_section(section: Section,
 
     if recursive:
         for child in section.children:
-            scale_section(child, section_scaling, segment_scaling, True)
+            scale_section(child, section_scaling, segment_scaling, True, rng)
 
     vectors = _segment_vectors(section, prepend_null_vector=True)
     if segment_scaling:
