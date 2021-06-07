@@ -5,7 +5,8 @@ ChangeLog
 0.2.7
 -----
 
-- Fix the recursive pass of `rng` in `scale_section`
+- Allow to pass numpy rangom generators ``yield_clones``.
+- Fix the recursive pass of ``rng`` in ``scale_section``, ``_recursive_rotational_jitter``
 
 
 0.2.6

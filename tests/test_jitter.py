@@ -61,7 +61,7 @@ def test_rotational_jitter():
     )
     # Note: the random numbers generated after np.random.seed(0) and np.random.default_rng(0)
     # are different so it is expected that the arrays are slightly different.
-    assert_array_almost_equal(neuron.section(1).points, [[0, 5, 0], [0.016297, 5, 4.999973]])
+    assert_array_almost_equal(neuron.section(1).points, [[0, 5, 0], [0.001096944, 5, 5]])
 
 
 def test_no_scaling():

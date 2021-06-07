@@ -1,4 +1,5 @@
 '''Module to produce clones of a morphology by jittering it'''
+from typing import Optional, Union
 
 import attr
 import numpy as np
@@ -7,6 +8,9 @@ from scipy.spatial.transform import Rotation
 
 from morph_tool.transform import rotate, translate
 from morphio.mut import Morphology, Section
+
+
+_RNG_TYPE = Union[np.random.RandomState, np.random.Generator]
 
 
 @attr.s
@@ -67,7 +71,7 @@ def _principal_direction(section: Section):
 
 def _recursive_rotational_jitter(section: Section, piecenumber: int,
                                  angle_mean: float, angle_std: float,
-                                 rng=np.random):
+                                 rng: _RNG_TYPE = np.random):
     '''Rotate a section and its descendent sections
 
     Many rotations are applied. Each time, the rotation is applied to the section and its
@@ -86,7 +90,7 @@ def _recursive_rotational_jitter(section: Section, piecenumber: int,
         rng: a random number generator (numpy.random is used by default)
     '''
     for child in section.children:
-        _recursive_rotational_jitter(child, piecenumber, angle_mean, angle_std)
+        _recursive_rotational_jitter(child, piecenumber, angle_mean, angle_std, rng)
 
     if section.is_root:
         return
@@ -103,7 +107,7 @@ def _recursive_rotational_jitter(section: Section, piecenumber: int,
     rotate(section, matrix, origin=section.points[0])
 
 
-def rotational_jitter(neuron: Morphology, params: RotationParameters, rng=np.random):
+def rotational_jitter(neuron: Morphology, params: RotationParameters, rng: _RNG_TYPE = np.random):
     '''Jitter sections by rotating them
 
     Args:
@@ -134,7 +138,7 @@ def _clip_minimum_scaling(scalings: float):
     return np.clip(scalings, a_min=0.01, a_max=None)
 
 
-def _broadcast(scaling_factors, axis):
+def _broadcast(scaling_factors: np.array, axis: Optional[int]):
     '''Broadcast scaling_factor so that it applies to the specified axis.
 
     If axis is None, the scaling_factor is applied to all axes
@@ -151,8 +155,8 @@ def _broadcast(scaling_factors, axis):
 def scale_section(section: Section,
                   section_scaling: ScaleParameters = None,
                   segment_scaling: ScaleParameters = None,
-                  recursive=False,
-                  rng=np.random) -> None:
+                  recursive: bool = False,
+                  rng: _RNG_TYPE = np.random) -> None:
     '''Scale the current section (and its descendents if recursive == True).
 
     Args:
@@ -201,7 +205,7 @@ def scale_section(section: Section,
 def scale_morphology(neuron: Morphology,
                      section_scaling: ScaleParameters = None,
                      segment_scaling: ScaleParameters = None,
-                     rng=np.random) -> None:
+                     rng: _RNG_TYPE = np.random) -> None:
     '''
     Scale a morphology.
 
@@ -227,7 +231,8 @@ def yield_clones(filename: str,
                  rotation_params: RotationParameters = None,
                  section_scaling: ScaleParameters = None,
                  segment_scaling: ScaleParameters = None,
-                 seed: int = None) -> Morphology:
+                 seed: int = None,
+                 rng: _RNG_TYPE = np.random) -> Morphology:
     '''Yields clones of the input morphology
 
     Args:
@@ -235,21 +240,23 @@ def yield_clones(filename: str,
         rotation_params: the rotation parameters
         section_scaling: the section by section specific parameters
         segment_scaling: the segment by segment specific parameters
-        seed: the numpy.random seed
+        seed: the numpy.random seed (considered only if numpy.random is used as a random number
+            generator)
+        rng: the numpy random number generator (default is numpy.random)
 
     Warning: this is an infinite generator
 
     Yields:
         morphio.mut.Morphology clones
     '''
-    if seed is not None:
-        np.random.seed(seed)
+    if seed is not None and rng is np.random:
+        rng.seed(seed)
 
     neuron = Morphology(filename)
     while True:
         clone = Morphology(neuron)
         if rotation_params is not None:
-            rotational_jitter(clone, rotation_params)
+            rotational_jitter(clone, rotation_params, rng)
         if segment_scaling is not None or section_scaling is not None:
-            scale_morphology(clone, section_scaling, segment_scaling)
+            scale_morphology(clone, section_scaling, segment_scaling, rng)
         yield clone
