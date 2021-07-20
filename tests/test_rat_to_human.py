@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 import pandas as pd
 from morphio.mut import Morphology
 from neurom import COLS, load_neuron
-from nose.tools import assert_equal, assert_raises
+import pytest
 from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
                            assert_array_equal)
 from pandas.testing import assert_frame_equal
@@ -20,8 +20,9 @@ MAPPING_PATH = DATA / 'mapping.yaml'
 
 
 def test__find_filepath():
-    assert_equal(tested._find_filepath(DATA, 'Neuron'), Path(DATA, 'Neuron.swc'))
-    assert_raises(ValueError, tested._find_filepath, DATA, 'miles.davis')
+    assert tested._find_filepath(DATA, 'Neuron') == Path(DATA, 'Neuron.swc')
+    with pytest.raises(ValueError):
+        tested._find_filepath(DATA, 'miles.davis')
 
 
 def test_extensions():
@@ -118,7 +119,7 @@ def test_scale_all_cells():
             tested.scale_all_cells(HUMAN_PATH / '../neurondb.dat',
                                    RAT_PATH / '../neurondb.dat',
                                    MAPPING_PATH, output_folder)
-        assert_equal(set(output_folder.rglob('*')),
+        assert (set(output_folder.rglob('*')) ==
                      {
                          Path(
                              output_folder, 'neuron3_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5'),

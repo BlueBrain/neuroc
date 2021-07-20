@@ -1,6 +1,4 @@
 '''The morph-tool command line launcher'''
-from __future__ import print_function
-
 import logging
 import os
 from itertools import chain

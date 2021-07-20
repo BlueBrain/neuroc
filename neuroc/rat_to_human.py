@@ -45,9 +45,11 @@ def neurondb_dataframe(filename: Path) -> pd.DataFrame:
 
 def _find_filepath(input_path: Path, stem: str):
     '''Find a morphology file with the given stem in input_path.'''
+    children = set(input_path.iterdir())
     for extension in ['.asc', '.swc', '.h5', '.ASC', '.SWC', '.H5']:
         path = Path(input_path, stem + extension)
-        if path.exists():
+        # check in children for case sensitivity
+        if path in children:
             return path.resolve()
     raise ValueError(f'{stem} not found in {input_path}')
 

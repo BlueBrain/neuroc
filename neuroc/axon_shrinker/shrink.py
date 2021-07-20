@@ -1,8 +1,5 @@
 '''A module to perform axon shrinking '''
-from __future__ import print_function
-
 import operator
-from operator import lt, gt
 import os
 import xml.etree.ElementTree
 
@@ -196,7 +193,7 @@ def cut_axon_end(neuron, y_cut):
     main_branch_sections = get_main_branch_sections(neuron, axon)
 
     for section in main_branch_sections:
-        op = gt if upward else lt
+        op = operator.gt if upward else operator.lt
         idx = np.where(op(section.points, y_cut))[0]
         if idx.size:
             cut_section_at_plane_coord(section, y_cut, upward, False)

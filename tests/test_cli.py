@@ -3,7 +3,6 @@ import shutil
 
 from tempfile import TemporaryDirectory
 from click.testing import CliRunner
-from nose.tools import assert_equal
 
 from neuroc.cli import scale
 
@@ -38,8 +37,8 @@ def test_cli():
                                      '--scaling', '2.0',
                                      str(DATA / 'simple.asc'),
                                      str(folder / 'simple-scaled.asc')])
-        assert_equal(result.exit_code, 0, result.exception)
-        assert_equal(len(list(folder.glob('*'))), 1)
+        assert result.exit_code == 0, result.exception
+        assert len(list(folder.glob('*'))) == 1
 
     with TemporaryDirectory(prefix='test-scale-folder') as folder:
         folder = Path(folder)
@@ -49,8 +48,8 @@ def test_cli():
                                      '--scaling', '2.0',
                                      str(input_folder),
                                      str(output_folder)])
-        assert_equal(result.exit_code, 0, result.exception)
-        assert_equal(len(list(output_folder.rglob('*'))), 3)
+        assert result.exit_code == 0, result.exception
+        assert len(list(output_folder.rglob('*'))) == 3
 
 
 def test_rat_to_human():
@@ -63,5 +62,5 @@ def test_rat_to_human():
                                      str(DATA / 'rat-cells' / 'neurondb.dat'),
                                      str(DATA / 'mapping.yaml'),
                                      str(folder)])
-        assert_equal(result.exit_code, 0, result.exc_info)
-        assert_equal(len(list(folder.glob('*'))), 5)
+        assert result.exit_code == 0, result.exc_info
+        assert len(list(folder.glob('*'))) == 5

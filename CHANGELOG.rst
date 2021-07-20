@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+0.2.8
+- Use pytest for tests instead of nosetests
+
+-----
 
 0.2.7
 -----
