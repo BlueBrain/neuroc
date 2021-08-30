@@ -2,6 +2,7 @@ ChangeLog
 =========
 
 0.2.8
+- Update NeuroM dependency to version >= 3
 - Use pytest for tests instead of nosetests
 
 -----

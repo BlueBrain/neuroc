@@ -26,14 +26,14 @@ setup(
                       'tqdm>=4.23.4',
                       'click>=6.7',
                       'pandas>=1.0.3',
-                      'morphio>=2.0.6',
-                      'morph-tool>=0.1.12',
-                      'neurom>=2,<3',
+                      'morphio>=3.0,<4.0',
+                      'morph-tool>=2.9.0,<3.0',
+                      'neurom>=3.0,<4.0',
                       'scikit-learn>=0.21.3',
     ],
     extras_require={
         'plotly': [
-            'neurom[plotly]>=1.4.10',
+            'neurom[plotly]>=3.0,<4.0',
             'dash>=1.1.1',  # The core dash backend
             'dash-html-components>=1.0.0',  # HTML components
             'dash-core-components>=1.1.1',  # Supercharged components

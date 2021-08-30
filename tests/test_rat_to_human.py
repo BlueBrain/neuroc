@@ -4,8 +4,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pandas as pd
-from morphio.mut import Morphology
-from neurom import COLS, load_neuron
+from neurom import COLS, load_morphology
+from neurom.core import Morphology
 import pytest
 from numpy.testing import (assert_almost_equal, assert_array_almost_equal,
                            assert_array_equal)
@@ -26,17 +26,17 @@ def test__find_filepath():
 
 
 def test_extensions():
-    assert_almost_equal(tested.dendritic_y_std(load_neuron(RAT_PATH / 'neuron1.swc')),
+    assert_almost_equal(tested.dendritic_y_std(load_morphology(RAT_PATH / 'neuron1.swc')),
                         2.165063509461097)
-    assert_almost_equal(tested.dendritice_radial_std(load_neuron(RAT_PATH / 'neuron1.swc')),
+    assert_almost_equal(tested.dendritice_radial_std(load_morphology(RAT_PATH / 'neuron1.swc')),
                         2.7726341266023544)
-    assert_almost_equal(tested.dendritic_diameter(load_neuron(RAT_PATH / 'neuron1.swc')), 2.5)
+    assert_almost_equal(tested.dendritic_diameter(load_morphology(RAT_PATH / 'neuron1.swc')), 2.5)
 
-    assert_almost_equal(tested.dendritic_y_std(load_neuron(DATA / 'Neuron.swc')),
+    assert_almost_equal(tested.dendritic_y_std(load_morphology(DATA / 'Neuron.swc')),
                         28.28029441833496)
-    assert_almost_equal(tested.dendritice_radial_std(load_neuron(DATA / 'Neuron.swc')),
+    assert_almost_equal(tested.dendritice_radial_std(load_morphology(DATA / 'Neuron.swc')),
                         22.013107299804688)
-    assert_almost_equal(tested.dendritic_diameter(load_neuron(DATA / 'Neuron.swc')),
+    assert_almost_equal(tested.dendritic_diameter(load_morphology(DATA / 'Neuron.swc')),
                         1.2016682624816895)
 
 

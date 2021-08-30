@@ -286,7 +286,7 @@ def run(file_dir, annotation_dir, output_dir, n_steps, heights):
     set_maximum_warnings(0)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    errors = list()
+    errors = []
     for f in tqdm(os.listdir(file_dir)):
         try:
             shrink_all_heights(os.path.join(file_dir, f),

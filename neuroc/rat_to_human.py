@@ -24,9 +24,8 @@ from typing import Callable, Iterable, List, Tuple
 import numpy as np
 import pandas as pd
 import yaml
-from morphio.mut import Morphology
-from neurom import COLS, NeuriteType, iter_neurites, load_neuron
-from neurom.core import Neuron
+from neurom import COLS, NeuriteType, iter_neurites, load_morphology
+from neurom.core import Morphology
 from tqdm import tqdm
 
 L = logging.getLogger('neuroc')
@@ -59,13 +58,13 @@ def not_axon(neurite):
     return neurite.type != NeuriteType.axon
 
 
-def dendritic_points(neuron: Neuron):
+def dendritic_points(neuron: Morphology):
     '''Returns a list of all points belonging to a dendrite.'''
     return np.vstack([neurite.points[:, COLS.XYZ]
                       for neurite in iter_neurites(neuron, filt=not_axon)])
 
 
-def dendritic_diameter(neuron: Neuron):
+def dendritic_diameter(neuron: Morphology):
     '''Get the dendritic diameter
     '''
     radii = np.hstack([neurite.points[:, COLS.R]
@@ -75,7 +74,7 @@ def dendritic_diameter(neuron: Neuron):
 
 def scaling_factors(human_paths: Iterable[str],
                     rat_paths: Iterable[str],
-                    funcs: Iterable[Callable[[Neuron], float]]):
+                    funcs: Iterable[Callable[[Morphology], float]]):
     '''Returns the list of scaling factors
 
     Args:
@@ -87,17 +86,17 @@ def scaling_factors(human_paths: Iterable[str],
     '''
     def means(paths):
         return np.mean([[func(morph) for func in funcs]
-                        for morph in map(load_neuron, paths)],
+                        for morph in map(load_morphology, paths)],
                        axis=0)
     return means(human_paths) / means(rat_paths)
 
 
-def dendritic_y_std(neuron: Neuron):
+def dendritic_y_std(neuron: Morphology):
     '''Get the standard deviation of the Y coordinate for dendritic points'''
     return dendritic_points(neuron)[:, COLS.Y].std()
 
 
-def dendritice_radial_std(neuron: Neuron):
+def dendritice_radial_std(neuron: Morphology):
     '''Get the standard deviation of the radial coordinate in the XZ plane for dendritic points'''
     radial_coord = np.linalg.norm(dendritic_points(neuron)[:, COLS.XZ],
                                   axis=1)
@@ -142,7 +141,7 @@ def iter_scaling_and_rat(
     human_neurondb: Path,
     rat_neurondb: Path,
     mtype_mapping_file: Path,
-    funcs: Iterable[Callable[[Neuron], float]]
+    funcs: Iterable[Callable[[Morphology], float]]
 ) -> Tuple[str, str, str, Path, List[float]]:
     '''Yields a tuple (human layer, rat mtype, rat layer, rat path, scaling factors)
 
@@ -249,7 +248,7 @@ def scale_all_cells(human_neurondb: Path,
 
     L.info('Scaling rat cells. This may take a while...')
 
-    metadata = list()
+    metadata = []
 
     for human_mtype, rat_mtype, rat_layer, rat_path, (y_scale, xz_scale, diam_scale) in tqdm(
             iterable):
