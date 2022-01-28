@@ -207,14 +207,14 @@ def apply(n_clicks, _, y, filename, options):
     data = y
     if options == ['cut-end']:
         neuron = cut_axon_end(filename, data[0])
-        path = os.path.join(OUTPUT_FOLDER, '{}-end-cut.{}'.format(name_no_ext, ext))
+        path = os.path.join(OUTPUT_FOLDER, f'{name_no_ext}-end-cut.{ext}')
         neuron.write(path)
         return path
 
     if options == ['shrink'] and data and len(data) >= 2:
         upward = (data[1] > data[0])
         cut_neuron, _ = cut_and_graft(filename, upward, data[0], data[1], 0)
-        path = os.path.join(OUTPUT_FOLDER, '{}-shrinked.{}'.format(name_no_ext, ext))
+        path = os.path.join(OUTPUT_FOLDER, f'{name_no_ext}-shrinked.{ext}')
         cut_neuron.write(path)
         return path
 
@@ -222,7 +222,7 @@ def apply(n_clicks, _, y, filename, options):
         upward = (data[1] > data[0])
         shrinked_neuron, _ = cut_and_graft(filename, upward, data[0], data[1], 0)
         neuron = cut_axon_end(shrinked_neuron, data[2])
-        path = os.path.join(OUTPUT_FOLDER, '{}-shrinked-and-end-end.{}'.format(name_no_ext, ext))
+        path = os.path.join(OUTPUT_FOLDER, f'{name_no_ext}-shrinked-and-end-end.{ext}')
         neuron.write(path)
         return path
 

@@ -1,11 +1,15 @@
 #!/usr/bin/env python
-
-import imp
-import sys
+import importlib.util
 
 from setuptools import setup, find_packages
 
-VERSION = imp.load_source("", "neuroc/version.py").__version__
+spec = importlib.util.spec_from_file_location(
+    "neuroc.version",
+    "neuroc/version.py",
+)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+VERSION = module.__version__
 
 setup(
     name="neuroc",
@@ -14,13 +18,13 @@ setup(
     version=VERSION,
     description='NeuroC: a collection of tools for morphology cloning applications',
     url="https://bbpteam.epfl.ch/project/issues/projects/NSETM/issues",
-    download_url="ssh://bbpcode.epfl.ch/nse/morph-tool",
+    download_url="https://bbpgitlab.epfl.ch/nse/neuroc",
     entry_points='''
         [console_scripts]
         neuroc=neuroc.cli:cli
     ''',
     license="BBP-internal-confidential",
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     install_requires=['attrs>=19.1.0',
                       'numpy>=1.15.1',
                       'tqdm>=4.23.4',
@@ -45,6 +49,8 @@ setup(
         'Development Status :: 2 - Pre-Alpha',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
 )

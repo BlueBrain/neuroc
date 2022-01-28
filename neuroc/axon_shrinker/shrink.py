@@ -241,6 +241,7 @@ def shrink_all_heights(orig_filename, annotation_filename,
 
         One of 'heights' or 'n_steps' must be passed
         '''
+    # pylint: disable=too-many-locals
     xml_tree = xml.etree.ElementTree.parse(annotation_filename)
     rules = read_placement_rules(xml_tree)
     if 'axon' not in rules:
@@ -261,13 +262,14 @@ def shrink_all_heights(orig_filename, annotation_filename,
         new_neuron, y_diff = cut_and_graft(
             orig_filename, upward, y_start_cut, y_start_graft, height_added)
 
-        write_neuron_and_rule(new_neuron,
-                              os.path.join(output_dir, '{}_height_{}'.format(
-                                  os.path.basename(orig_filename).split('.')[0],
-                                  height_added)),
-                              xml_tree,
-                              rules,
-                              y_diff)
+        prefix = os.path.basename(orig_filename).split(".")[0]
+        write_neuron_and_rule(
+            new_neuron,
+            os.path.join(output_dir, f'{prefix}_height_{height_added}'),
+            xml_tree,
+            rules,
+            y_diff,
+        )
 
 
 def write_neuron_and_rule(new_neuron, filename, xml_tree, rules, y_diff):
@@ -301,4 +303,4 @@ def run(file_dir, annotation_dir, output_dir, n_steps, heights):
     if errors:
         print('\nThe following files could not be processed:')
         for name, error in errors:
-            print('{}: {}'.format(name, error))
+            print(f'{name}: {error}')
