@@ -52,4 +52,4 @@ def update_rule(root, pattern, properties):
             for key, value in properties.items():
                 child.set(key, value)
             return
-    raise Exception('No rule found to update')
+    raise RuntimeError('No rule found to update')

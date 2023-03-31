@@ -77,18 +77,20 @@ def _make_trace(neuron, plane):
 
         segs = [(s[0][COLS.XYZ], s[1][COLS.XYZ]) for s in segments]
 
-        coords = dict(x=list(chain.from_iterable((p1[0], p2[0], None) for p1, p2 in segs)),
-                      y=list(chain.from_iterable((p1[1], p2[1], None) for p1, p2 in segs)),
-                      z=list(chain.from_iterable((p1[2], p2[2], None) for p1, p2 in segs)))
+        coords = {
+            'x': list(chain.from_iterable((p1[0], p2[0], None) for p1, p2 in segs)),
+            'y': list(chain.from_iterable((p1[1], p2[1], None) for p1, p2 in segs)),
+            'z': list(chain.from_iterable((p1[2], p2[2], None) for p1, p2 in segs)),
+        }
 
         color = TREE_COLOR.get(neurite.root_node.type, 'black')
         if plane.lower() == '3d':
             plot_fun = go.Scatter3d
         else:
             plot_fun = go.Scatter
-            coords = dict(x=coords[plane[0]], y=coords[plane[1]])
+            coords = {'x': coords[plane[0]], 'y': coords[plane[1]]}
         yield plot_fun(
-            line=dict(color=color, width=2),
+            line={'color': color, 'width': 2},
             mode='lines',
             **coords
         )
@@ -212,14 +214,14 @@ def apply(n_clicks, _, y, filename, options):
         return path
 
     if options == ['shrink'] and data and len(data) >= 2:
-        upward = (data[1] > data[0])
+        upward = data[1] > data[0]
         cut_neuron, _ = cut_and_graft(filename, upward, data[0], data[1], 0)
         path = os.path.join(OUTPUT_FOLDER, f'{name_no_ext}-shrinked.{ext}')
         cut_neuron.write(path)
         return path
 
     if set(options) == {'shrink', 'cut-end'} and data and len(data) >= 3:
-        upward = (data[1] > data[0])
+        upward = data[1] > data[0]
         shrinked_neuron, _ = cut_and_graft(filename, upward, data[0], data[1], 0)
         neuron = cut_axon_end(shrinked_neuron, data[2])
         path = os.path.join(OUTPUT_FOLDER, f'{name_no_ext}-shrinked-and-end-end.{ext}')

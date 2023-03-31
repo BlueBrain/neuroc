@@ -251,7 +251,7 @@ def shrink_all_heights(orig_filename, annotation_filename,
 
     if not heights:
         if not n_steps:
-            raise Exception("'heights' and 'n_steps' arguments can not be None at the same time")
+            raise ValueError("'heights' and 'n_steps' arguments can not be None at the same time")
         y = ['y_min', 'y_max']
         height_range = abs(rules['axon'][y[not upward]] - rules['dendrite'][y[upward]])
         heights = np.linspace(0, height_range, n_steps)

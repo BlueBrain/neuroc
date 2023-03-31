@@ -17,6 +17,8 @@ setup(
     author_email="bbp-ou-nse@groupes.epfl.ch",
     version=VERSION,
     description='NeuroC: a collection of tools for morphology cloning applications',
+    long_description='NeuroC: a collection of tools for morphology cloning applications',
+    long_description_content_type="text/plain",
     url="https://bbpteam.epfl.ch/project/issues/projects/NSETM/issues",
     download_url="https://bbpgitlab.epfl.ch/nse/neuroc",
     entry_points='''
@@ -52,5 +54,6 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
 )
