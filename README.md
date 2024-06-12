@@ -4,7 +4,7 @@ A collections of programs morphology cloning
 The following packages can be found
 - axon shrinker:
 
-For each morphology of the FILES_FOLDER, remove the axon splice described by the corresponding annotation (ie. located between the end of the dendritic annotation and the start of the axonal annotation) and replace it by an intermediate vertical segment. For each input morphology,
+For each morphology of the FILES\_FOLDER, remove the axon splice described by the corresponding annotation (ie. located between the end of the dendritic annotation and the start of the axonal annotation) and replace it by an intermediate vertical segment. For each input morphology,
     NSAMPLES output morphologies are generated, each with a different length of the replaced segment. Lengths spans from 0 to the length of initially spliced segment
 
 - jitter:
@@ -44,7 +44,7 @@ to shrink axons.
 neuroc scale rat-to-human HUMAN_DIR RAT_DIR MTYPE_MAPPING OUTPUT_DIR
 ```
 
-Will scale the rat cells in RAT_DIR to human cells dimensions.
+Will scale the rat cells in RAT\_DIR to human cells dimensions.
 HUMAN\_DIR should be a dir with the following structure:
 - Must be **only** composed of sub-folders whose filename is a layer name
 - Each sub folder should be composed of morphology files whose first part of the filename before the '_' is considered as the **mtype**
@@ -67,3 +67,13 @@ $ RAT_DIR\L1\AC_cell_name.swc
 $ RAT_DIR\L1\BTC_cell_name.swc
 $ ...
 ```
+
+## Acknowledgements
+
+The development of this software was supported by funding to the Blue Brain Project, a research center of the École polytechnique fédérale de Lausanne (EPFL), from the Swiss government’s ETH Board of the Swiss Federal Institutes of Technology.
+
+This project/research received funding from the European Union’s Horizon 2020 Framework Programme for Research and Innovation under the Framework Partnership Agreement No. 650003 (HBP FPA).
+
+For license and authors, see LICENSE.txt. 
+
+Copyright (c) 2013-2024 Blue Brain Project/EPFL
