@@ -1,5 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
 '''XML utility functions'''
-
 
 def convert_floats(dict_):
     '''convert to float where possible

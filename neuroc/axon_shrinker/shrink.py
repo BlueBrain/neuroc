@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 '''A module to perform axon shrinking '''
 import operator
 import os
