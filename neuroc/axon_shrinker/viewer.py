@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 '''The morph-tool command line launcher'''
 import logging
 import os

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 '''Module to produce clones of a morphology by jittering it'''
 from typing import Optional, Union
 

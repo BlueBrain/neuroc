@@ -1,4 +1,4 @@
-"""Sample nosetest file."""
+# SPDX-License-Identifier: Apache-2.0
 import warnings
 from pathlib import Path
 from tempfile import TemporaryDirectory

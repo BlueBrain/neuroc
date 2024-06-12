@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# SPDX-License-Identifier: Apache-2.0
 import importlib.util
 
 from setuptools import setup, find_packages
@@ -35,7 +35,7 @@ setup(
                       'morphio>=3.0,<4.0',
                       'morph-tool>=2.9.0,<3.0',
                       'neurom>=3.0,<4.0',
-                      'scikit-learn>=0.21.3',
+                      'scikit-learn>=0.21.3,<1.5',
     ],
     extras_require={
         'plotly': [

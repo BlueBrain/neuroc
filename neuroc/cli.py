@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 '''CLI endpoint'''
 # pylint: disable=import-outside-toplevel
 from pathlib import Path

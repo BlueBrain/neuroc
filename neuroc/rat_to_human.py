@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 '''
 Module for the scaling of rat cells to human cells dimensions.
 https://bbpteam.epfl.ch/project/issues/browse/IHNM-6
