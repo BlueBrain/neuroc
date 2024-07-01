@@ -7,8 +7,8 @@ from pathlib import Path
 from time import time
 
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State
 from neurom import COLS, NeuriteType, iter_neurites, iter_segments, load_neuron
