@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "neuroc"
 description = "NeuroC: a collection of tools for morphology cloning applications"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 license = { text = "Apache-2.0" }
 authors = [
     { name = "Blue Brain Project, EPFL" },
