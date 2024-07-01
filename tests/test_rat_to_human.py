@@ -124,7 +124,11 @@ def test_scale_all_cells(tmp_path):
         Path(output_folder, 'neuron3_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
         Path(output_folder, 'neuron4_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
         }
-    assert (set(output_folder.rglob('*')) == expected)
+    print(output_folder)
+    import subprocess
+    print(subprocess.run(['ls', '-al', str(output_folder)]))
+    print(list(output_folder.rglob('*.*')))
+    assert (set(output_folder.rglob('*.*')) == expected)
 
     df = pd.read_csv(output_folder / 'neurondb.csv', index_col=False)
     expected = pd.read_csv(DATA / 'expected-metadata.csv')
