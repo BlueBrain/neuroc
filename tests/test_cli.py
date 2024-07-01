@@ -59,9 +59,10 @@ def test_rat_to_human():
     with TemporaryDirectory(prefix='test-scale-file') as folder:
         folder = Path(folder)
         result = runner.invoke(scale, ['rat-to-human',
-                                     str(DATA / 'human-cells' / 'neurondb.dat'),
-                                     str(DATA / 'rat-cells' / 'neurondb.dat'),
-                                     str(DATA / 'mapping.yaml'),
-                                     str(folder)])
+                                       '--extension', 'swc',
+                                       str(DATA / 'human-cells' / 'neurondb.dat'),
+                                       str(DATA / 'rat-cells' / 'neurondb.dat'),
+                                       str(DATA / 'mapping.yaml'),
+                                       str(folder)])
         assert result.exit_code == 0, result.exc_info
         assert len(list(folder.glob('*'))) == 5

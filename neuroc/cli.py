@@ -102,11 +102,12 @@ def axon_shrinker(files_folder, annotations_folder, output_folder, nsamples, hei
 
 # pylint: disable=function-redefined
 @scale.command(short_help='Scale rat cell to human cell dimensions')
+@click.option('--extension', type=str, default="h5", help="Valid morphology extenstion")
 @click.argument('human_neurondb', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('rat_neurondb', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('mtype_mapping', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('output_dir', type=click.Path(exists=True, file_okay=False, writable=True))
-def rat_to_human(human_neurondb, rat_neurondb, mtype_mapping, output_dir):
+def rat_to_human(extension, human_neurondb, rat_neurondb, mtype_mapping, output_dir):
     '''Scale rat cells to human cells diamensions
 
     Args:
@@ -139,4 +140,5 @@ def rat_to_human(human_neurondb, rat_neurondb, mtype_mapping, output_dir):
     scale_all_cells(Path(human_neurondb),
                     Path(rat_neurondb),
                     Path(mtype_mapping),
-                    Path(output_dir))
+                    Path(output_dir),
+                    extension=extension)
