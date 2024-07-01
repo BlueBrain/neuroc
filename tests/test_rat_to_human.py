@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 import warnings
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import pandas as pd
 from neurom import COLS, load_morphology
@@ -112,25 +111,24 @@ def test_scale_one_cells():
     assert_array_almost_equal(s2.diameters / s1.diameters, 12.7)
 
 
-def test_scale_all_cells():
-    with TemporaryDirectory('test-scale-rat-cells') as output_folder:
-        output_folder = Path(output_folder)
-        with warnings.catch_warnings(record=True):
-            tested.scale_all_cells(HUMAN_PATH / '../neurondb.dat',
-                                   RAT_PATH / '../neurondb.dat',
-                                   MAPPING_PATH, output_folder, extension='swc')
-        expected = {
-            Path(output_folder, 'neurondb.csv'),
-            Path(output_folder, 'neuron1_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.swc'),
-            Path(output_folder, 'neuron2_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
-            Path(output_folder, 'neuron3_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
-            Path(output_folder, 'neuron4_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
-            }
-        assert (set(output_folder.rglob('*')) == expected)
+def test_scale_all_cells(tmp_path):
+    output_folder = tmp_path
+    with warnings.catch_warnings(record=True):
+        tested.scale_all_cells(HUMAN_PATH / '../neurondb.dat',
+                               RAT_PATH / '../neurondb.dat',
+                               MAPPING_PATH, output_folder, extension='swc')
+    expected = {
+        Path(output_folder, 'neurondb.csv'),
+        Path(output_folder, 'neuron1_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.swc'),
+        Path(output_folder, 'neuron2_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
+        Path(output_folder, 'neuron3_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
+        Path(output_folder, 'neuron4_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
+        }
+    assert (set(output_folder.rglob('*')) == expected)
 
-        df = pd.read_csv(output_folder / 'neurondb.csv', index_col=False)
-        expected = pd.read_csv(DATA / 'expected-metadata.csv')
-        assert_frame_equal(df, expected)
+    df = pd.read_csv(output_folder / 'neurondb.csv', index_col=False)
+    expected = pd.read_csv(DATA / 'expected-metadata.csv')
+    assert_frame_equal(df, expected)
 
 
 def test_extended_neurondb():
