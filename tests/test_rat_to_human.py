@@ -118,18 +118,15 @@ def test_scale_all_cells():
         with warnings.catch_warnings(record=True):
             tested.scale_all_cells(HUMAN_PATH / '../neurondb.dat',
                                    RAT_PATH / '../neurondb.dat',
-                                   MAPPING_PATH, output_folder)
-        assert (set(output_folder.rglob('*')) ==
-                     {
-                         Path(
-                             output_folder, 'neuron3_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5'),
-                         Path(
-                             output_folder, 'neuron2_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5'),
-                         Path(output_folder, 'neurondb.csv'),
-                         Path(
-                             output_folder, 'neuron4_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.h5'),
-                         Path(output_folder, 'neuron1_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.h5')
-        })
+                                   MAPPING_PATH, output_folder, extension='swc')
+        expected = {
+            Path(output_folder, 'neurondb.csv'),
+            Path(output_folder, 'neuron1_-_Y-Scale_1.0_-_XZ-Scale_1.0_-_Diam-Scale_1.0.swc'),
+            Path(output_folder, 'neuron2_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
+            Path(output_folder, 'neuron3_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
+            Path(output_folder, 'neuron4_-_Y-Scale_2.0_-_XZ-Scale_2.0_-_Diam-Scale_3.0.swc'),
+            }
+        assert (set(output_folder.rglob('*')) == expected)
 
         df = pd.read_csv(output_folder / 'neurondb.csv', index_col=False)
         expected = pd.read_csv(DATA / 'expected-metadata.csv')

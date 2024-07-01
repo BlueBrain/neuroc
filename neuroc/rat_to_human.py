@@ -211,7 +211,9 @@ def scale_one_cell(path: Path, y_scale: float, xz_scale: float, diam_scale: floa
 def scale_all_cells(human_neurondb: Path,
                     rat_neurondb: Path,
                     mtype_mapping_file: Path,
-                    output_folder: Path) -> None:
+                    output_folder: Path,
+                    extension: str,
+                    ) -> None:
     '''Scale rat cells to human cells diamensions
 
     Args:
@@ -222,6 +224,7 @@ def scale_all_cells(human_neurondb: Path,
                 key: human mtype
                 value: list of corresponding rat mtypes
         output_folder: the output folder
+        extension: extension to write
 
     Algorithm:
     1) Human and rat mtypes are grouped together according to the mapping
@@ -254,7 +257,7 @@ def scale_all_cells(human_neurondb: Path,
     for human_mtype, rat_mtype, rat_layer, rat_path, (y_scale, xz_scale, diam_scale) in tqdm(
             iterable):
         name = (f'{rat_path.stem}_-_Y-Scale_{y_scale}_-_XZ-Scale_{xz_scale}_-_Diam-'
-                f'Scale_{diam_scale}.h5')
+                f'Scale_{diam_scale}.{extension}')
         scale_one_cell(rat_path, y_scale, xz_scale, diam_scale).write(output_folder / name)
         metadata.append([Path(name).stem, human_mtype, rat_mtype, rat_layer, rat_path.stem])
 
